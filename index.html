@@ -631,22 +631,39 @@ async function refreshWeather(){
 }
 
 // ── Backup / Restore ─────────────────────────────────────────
-function exportBackup(){
-  const data={expenses,mileage,rentalCosts,
+async function exportBackup(){
+  // Alle PDFs aus IndexedDB lesen
+  let docs=[];
+  try{
+    if(db){
+      docs=await new Promise((res,rej)=>{
+        const tx=db.transaction('docs','readonly');
+        const req=tx.objectStore('docs').getAll();
+        req.onsuccess=()=>res(req.result);
+        req.onerror=()=>rej();
+      });
+    }
+  }catch(e){}
+
+  const data={
+    expenses,mileage,rentalCosts,docs,
     wxCache:localStorage.getItem('rb26_wx'),
     rate:localStorage.getItem('rb26_rate'),
-    exportedAt:new Date().toISOString()};
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    exportedAt:new Date().toISOString()
+  };
+  const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=`roadbook_backup_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
+  const count=docs.length;
+  if(count>0)setTimeout(()=>alert(`✅ Backup exportiert inkl. ${count} Dokument${count>1?'e':''}`),500);
 }
 
 function importBackup(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=e=>{
+  reader.onload=async e=>{
     try{
       const d=JSON.parse(e.target.result);
       if(d.expenses){expenses=d.expenses;localStorage.setItem('rb26_exp',JSON.stringify(expenses));}
@@ -655,7 +672,34 @@ function importBackup(input){
       if(d.wxCache)localStorage.setItem('rb26_wx',d.wxCache);
       if(d.rate)localStorage.setItem('rb26_rate',d.rate);
       migrateExpenses();loadWxCache();
-      alert('✅ Backup erfolgreich wiederhergestellt!');
+
+      // Dokumente in IndexedDB wiederherstellen
+      let docsRestored=0;
+      if(d.docs&&d.docs.length&&db){
+        // Erst alle alten Docs löschen
+        await new Promise((res,rej)=>{
+          const tx=db.transaction('docs','readwrite');
+          tx.objectStore('docs').clear();
+          tx.oncomplete=res;tx.onerror=rej;
+        });
+        // Dann neue einfügen
+        for(const doc of d.docs){
+          try{
+            await new Promise((res,rej)=>{
+              const tx=db.transaction('docs','readwrite');
+              // id weglassen damit autoIncrement greift
+              const {id,...docData}=doc;
+              tx.objectStore('docs').add(docData);
+              tx.oncomplete=res;tx.onerror=rej;
+            });
+            docsRestored++;
+          }catch(err){}
+        }
+      }
+      const msg=docsRestored>0
+        ?`✅ Backup wiederhergestellt inkl. ${docsRestored} Dokument${docsRestored>1?'e':''}`
+        :'✅ Backup erfolgreich wiederhergestellt!';
+      alert(msg);
       render();
     }catch(err){alert('❌ Ungültige Backup-Datei');}
   };
