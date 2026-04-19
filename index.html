@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<!-- PWA iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Roadbook 26">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<!-- PWA Android / allgemein -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#bf7530">
+<!-- iOS Splash (Portrait) -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Pacific Northwest 2026</title>
+<style>
+:root{
+  --bg:#f5f0e8;--surface:#fff;--s2:#ede8df;
+  --acc:#bf7530;--acc-l:#fdf3e3;--acc-d:#8f5520;
+  --t1:#1a0f05;--t2:#6b4e30;--t3:#a07850;
+  --bdr:rgba(0,0,0,.09);
+  --grn:#2a6048;--grn-l:#e4f2eb;
+  --red:#b53025;--red-l:#fcebe9;
+  --blu:#1a4a8a;--blu-l:#e6eef9;
+  --r1:8px;--r2:12px;--r3:16px;--r4:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%;background:var(--bg)}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;color:var(--t1);max-width:600px;margin:0 auto}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit}
+
+/* Nav */
+.nav{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:.5px solid var(--bdr);padding-top:env(safe-area-inset-top,0)}
+.nav-in{display:flex;align-items:center;height:50px;padding:0 14px;gap:8px}
+.nav-back{background:none;border:none;color:var(--acc);font-size:15px;padding:8px 6px 8px 0;display:flex;align-items:center;gap:3px;min-width:56px}
+.nav-title{flex:1;text-align:center;font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-spc{min-width:56px}
+
+/* Home header */
+.home-hdr{background:var(--acc);color:#fff;padding:22px 18px 26px}
+.hdr-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;opacity:.75;margin-bottom:6px}
+.hdr-title{font-size:27px;font-weight:700;font-family:Georgia,serif;line-height:1.15;margin-bottom:3px}
+.hdr-dates{font-size:13px;opacity:.8;margin-bottom:20px}
+.hdr-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:rgba(255,255,255,.18);border-radius:var(--r2);padding:10px 6px;text-align:center}
+.stat-n{font-size:22px;font-weight:700;display:block}
+.stat-l{font-size:9px;text-transform:uppercase;letter-spacing:.07em;opacity:.75}
+
+/* Section header */
+.sec-hdr{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;padding:14px 14px 5px}
+
+/* Day list */
+.day-list{padding:0 10px 80px;display:flex;flex-direction:column;gap:7px}
+.day-card{background:var(--surface);border-radius:var(--r3);border:.5px solid var(--bdr);padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:opacity .15s}
+.day-card:active{opacity:.65}
+.dc-badge{width:44px;height:44px;border-radius:var(--r2);background:var(--acc-l);color:var(--acc);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
+.dc-badge.t-fly{background:var(--blu-l);color:var(--blu)}
+.dc-badge.t-rest{background:var(--grn-l);color:var(--grn)}
+.dc-n{font-size:15px;font-weight:700;line-height:1}
+.dc-l{font-size:9px;font-weight:600;text-transform:uppercase;opacity:.7}
+.dc-info{flex:1;min-width:0}
+.dc-date{font-size:11px;color:var(--t3);margin-bottom:1px}
+.dc-title{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dc-sub{font-size:12px;color:var(--t2);margin-top:2px}
+.dc-arr{color:var(--t3);font-size:15px}
+
+/* Day hero */
+.day-hero{background:var(--acc);color:#fff;padding:14px 16px 18px}
+.hero-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;opacity:.72;margin-bottom:4px}
+.hero-title{font-size:21px;font-weight:700;font-family:Georgia,serif;line-height:1.2}
+.hero-route{font-size:13px;opacity:.8;margin-top:3px}
+
+/* Tabs */
+.tab-bar{display:flex;border-bottom:.5px solid var(--bdr);background:var(--surface);overflow-x:auto;scrollbar-width:none}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-btn{flex:1;min-width:68px;padding:11px 4px;background:none;border:none;border-bottom:2px solid transparent;font-size:12px;font-weight:500;color:var(--t3);white-space:nowrap;transition:color .15s}
+.tab-btn.on{color:var(--acc);border-bottom-color:var(--acc)}
+
+/* Content area */
+.content{padding:14px;padding-bottom:80px;display:flex;flex-direction:column;gap:11px}
+
+/* Card */
+.card{background:var(--surface);border-radius:var(--r3);border:.5px solid var(--bdr);overflow:hidden}
+.card-hdr{padding:11px 13px;border-bottom:.5px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.card-ttl{font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em}
+.card-body{padding:13px;display:flex;flex-direction:column;gap:9px}
+
+/* Info rows */
+.ir{display:flex;align-items:baseline;gap:8px}
+.ir-l{font-size:12px;color:var(--t3);min-width:82px;flex-shrink:0}
+.ir-v{font-size:14px;font-weight:500}
+
+/* Badge */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:100px;font-size:13px;font-weight:600}
+.badge.ok{background:var(--grn-l);color:var(--grn)}
+.badge.no{background:var(--red-l);color:var(--red)}
+
+/* Route stops */
+.stop-list{display:flex;flex-direction:column;padding:0 4px}
+.stop{display:flex;align-items:flex-start;gap:10px;padding:7px 0;position:relative}
+.stop:not(:last-child)::after{content:'';position:absolute;left:9px;top:26px;bottom:0;width:1.5px;background:var(--bdr)}
+.stop-dot{width:20px;height:20px;border-radius:50%;background:var(--acc-l);border:2px solid var(--acc);flex-shrink:0;margin-top:2px}
+.stop-dot.f,.stop-dot.l{background:var(--acc)}
+.stop-nm{font-size:14px;font-weight:500}
+.stop-mi{font-size:12px;color:var(--t3)}
+
+/* Highlights */
+.hl{display:flex;gap:11px;align-items:flex-start;padding:11px 0;border-bottom:.5px solid var(--bdr)}
+.hl:last-child{border-bottom:none;padding-bottom:0}
+.hl:first-child{padding-top:0}
+.hl-ico{font-size:22px;flex-shrink:0;width:30px;text-align:center;margin-top:1px}
+.hl-nm{font-size:14px;font-weight:600;margin-bottom:2px}
+.hl-ds{font-size:13px;color:var(--t2);line-height:1.5}
+
+/* Expense inputs */
+.ex-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.ex-f label{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:4px}
+.ex-f input{width:100%;padding:9px 10px;border:.5px solid var(--bdr);border-radius:var(--r1);font-size:14px;background:var(--bg);color:var(--t1)}
+.ex-f input:focus{outline:none;border-color:var(--acc)}
+
+/* Mileage */
+.mileage-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:0}
+.fuel-cost{background:var(--blu-l);border-radius:var(--r1);padding:8px 12px;display:flex;justify-content:space-between;align-items:center}
+.fuel-cost-lbl{font-size:11px;font-weight:700;color:var(--blu);text-transform:uppercase;letter-spacing:.07em}
+.fuel-cost-val{font-size:15px;font-weight:700;color:var(--blu)}
+
+/* Car overview */
+.car-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.car-stat{background:var(--s2);border-radius:var(--r2);padding:10px 12px;text-align:center}
+.car-stat-n{font-size:20px;font-weight:700;color:var(--t1);display:block}
+.car-stat-l{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-top:2px}
+.progress-bar{height:6px;background:var(--s2);border-radius:3px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;background:var(--acc);border-radius:3px;transition:width .4s}
+
+/* Weather */
+.wx{display:inline-flex;align-items:center;gap:6px;background:var(--s2);padding:5px 11px;border-radius:100px;font-size:13px;color:var(--t2)}
+
+/* Tip box */
+.tip{background:var(--acc-l);border-radius:var(--r2);padding:11px 13px;border-left:3px solid var(--acc)}
+.tip-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--acc-d);margin-bottom:3px}
+.tip-txt{font-size:13px;color:var(--t1);line-height:1.5}
+
+/* Expense entries */
+.add-btn{background:var(--acc);color:#fff;border:none;border-radius:var(--r1);padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer}
+.add-btn:active{background:var(--acc-d)}
+.entry-row{display:grid;grid-template-columns:1fr 82px 34px 30px;gap:6px;align-items:center}
+.entry-desc,.entry-amt{padding:8px 10px;border:.5px solid var(--bdr);border-radius:var(--r1);font-size:13px;background:var(--bg);color:var(--t1);width:100%}
+.entry-amt{text-align:right}
+.entry-desc:focus,.entry-amt:focus{outline:none;border-color:var(--acc)}
+.cur-btn{height:34px;border:none;border-radius:var(--r1);font-size:13px;font-weight:700;cursor:pointer;transition:background .15s}
+.cur-btn.usd{background:var(--blu-l);color:var(--blu)}
+.cur-btn.eur{background:var(--grn-l);color:var(--grn)}
+.del-btn{background:var(--red-l);color:var(--red);border:none;border-radius:var(--r1);width:30px;height:34px;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.del-btn:active{background:#f5c0bb}
+.entry-sum{text-align:right;font-size:13px;color:var(--t2);padding-top:6px;border-top:.5px solid var(--bdr);margin-top:2px}
+.entry-empty{text-align:center;padding:8px 0;font-size:13px;color:var(--t3)}
+
+/* Save indicator */
+.saved-msg{font-size:12px;color:var(--grn);text-align:right;height:18px;transition:opacity .3s}
+.saved-msg.hide{opacity:0}
+
+.nav-arr{background:none;border:none;color:var(--acc);font-size:20px;padding:4px 7px;border-radius:var(--r1);line-height:1;transition:background .15s}
+.nav-arr:active{background:var(--acc-l)}
+.nav-arr-dis{opacity:.25;pointer-events:none}
+/* Documents */
+.doc-item{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:.5px solid var(--bdr)}
+.doc-item:last-child{border-bottom:none;padding-bottom:0}
+.doc-item:first-child{padding-top:0}
+.doc-ico{width:38px;height:44px;background:var(--red-l);border-radius:var(--r1);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.doc-info{flex:1;min-width:0}
+.doc-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc-meta{font-size:11px;color:var(--t3);margin-top:2px}
+.doc-actions{display:flex;gap:6px;flex-shrink:0}
+.doc-btn{border:none;border-radius:var(--r1);padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer}
+.doc-btn.view{background:var(--blu-l);color:var(--blu)}
+.doc-btn.del{background:var(--red-l);color:var(--red)}
+.upload-area{border:1.5px dashed var(--bdr);border-radius:var(--r2);padding:22px 16px;text-align:center;cursor:pointer;transition:border-color .2s}
+.upload-area:hover{border-color:var(--acc)}
+.upload-area-ico{font-size:28px;margin-bottom:6px}
+.upload-area-lbl{font-size:13px;font-weight:600;color:var(--t2)}
+.upload-area-sub{font-size:11px;color:var(--t3);margin-top:2px}
+.pb-safe{height:max(16px,env(safe-area-inset-bottom))}
+</style>
+</head>
+<body>
+<div id="offline-banner" style="display:none;background:var(--red);color:#fff;text-align:center;padding:9px 14px;font-size:12px;font-weight:600;position:sticky;top:0;z-index:200">
+  📵 Kein Internet – gespeicherte Daten werden verwendet
+</div>
+<div id="app"></div>
+<script>
+const DAYS=[
+{id:0,date:"05.06.26",tag:"Tag 1",type:"fly",title:"Anreisetag",from:"Berlin",to:"Seattle",miles:19,
+ stops:[{n:"Berlin Tegel / BER",f:1},{n:"Frankfurt (LH 205, 07:15 Uhr)",m:""},{n:"Seattle SeaTac (LH 490, Ank. 11:55)",m:""},{n:"Walmart Renton",m:"ca. 5 Meilen"},{n:"W Hotel Seattle",m:"ca. 14 Meilen",l:1}],
+ hotel:{nm:"W Seattle",addr:"1112 4th Ave, Seattle, WA 98101",ci:"16:00",co:"12:00",bkf:false,bkf_i:"❌ Nicht inklusive",bkf_t:"Lola Restaurant (2000 4th Ave) – Pancakes, French Toast, Bacon – 10 Min. Fußweg"},
+ hl:[{e:"🛬",n:"Mietwagen Alamo",d:"Premium SUV 7-Sitzer – 3150 S 160th St, SeaTac. Tank-Option prüfen!"},{e:"🛒",n:"Walmart Renton",d:"743 Rainier Ave S – Erstversorgung: Wasser, Snacks, Sonnencreme, Toilettenartikel"},{e:"🏨",n:"W Seattle Check-In",d:"Ab 16:00 Uhr – Gepäck ggf. früher abgeben"}],
+ wx:{t:"14–18°C",d:"Meist bewölkt, trocken"}},
+
+{id:1,date:"06.06.26",tag:"Tag 2",type:"rest",title:"Seattle",from:"Seattle",to:"Seattle",miles:0,
+ stops:[],
+ hotel:{nm:"W Seattle",addr:"1112 4th Ave, Seattle, WA 98101",ci:"–",co:"12:00",bkf:false,bkf_i:"❌ Nicht inklusive",bkf_t:"Lola Restaurant (2000 4th Ave) – Pancakes & French Toast"},
+ hl:[{e:"🚝",n:"Seattle Center Monorail",d:"Gebaut 1962 – Elvis fuhr hier! Nur 2 Min. Fahrt, aber ein Erlebnis"},{e:"🌌",n:"Space Needle",d:"Glasböden, Skyrisers, rotierender Glasboden – vorab online buchen!"},{e:"🎸",n:"MoPOP",d:"Nirvana, Jimi Hendrix, Sci-Fi Ausstellung – 2–3 Stunden einplanen"},{e:"🐟",n:"Pike Place Market",d:"Fischwerfer, Gum Wall, erster Starbucks – mittags für Lunch"},{e:"🏙️",n:"Columbia Center Sky View",d:"73. Stock, höchstes öff. Observatorium der Westküste – Blick auf Space Needle von oben"},{e:"🌸",n:"Chihuly Garden & Glass",d:"Glaskunst direkt neben Space Needle – Kombi-Ticket spart Geld!"}],
+ wx:{t:"14–19°C",d:"Bewölkt, ca. 30% Regenrisiko – Jacke empfohlen"}},
+
+{id:2,date:"07.06.26",tag:"Tag 3",type:"drive",title:"Seattle → Port Angeles",from:"Seattle",to:"Port Angeles",miles:180,
+ stops:[{n:"Seattle",f:1},{n:"Hood Canal",m:"ca. 62 Meilen"},{n:"Sequim (Lavendel!)",m:"ca. 37 Meilen"},{n:"Port Angeles",m:"ca. 17 Meilen",l:1}],
+ hotel:{nm:"Red Lion Hotel Port Angeles Harbor",addr:"221 N Lincoln St, Port Angeles, WA 98362",ci:"16:00",co:"11:00",bkf:false,bkf_i:"❌ Nicht inklusive (Restaurant vor Ort, 8–24 USD)",bkf_t:"Chestnut Cottage Restaurant (101 E Front St, 5 Min.) – Pancakes & Omelets seit 1976"},
+ hl:[{e:"🌊",n:"Hood Canal",d:"Traumhafter Fjord direkt am Highway 101 – kurzer Fotostopp"},{e:"💜",n:"Sequim Lavender Farms",d:"JUNI = Hochsaison! Mehrere Farmen offen – Fragrance Lake, Purple Haze usw."},{e:"🐦",n:"Dungeness Spit",d:"Längste natürliche Landzunge der USA – 10 km ins Meer, historischer Leuchtturm"},{e:"🏔️",n:"Olympic NP Visitor Center",d:"2 Meilen vom Hotel – America the Beautiful Pass kaufen!"}],
+ wx:{t:"12–18°C",d:"Bewölkt, mäßig – typisch olympische Halbinsel"}},
+
+{id:3,date:"08.06.26",tag:"Tag 4",type:"drive",title:"Port Angeles – Erkundung",from:"Port Angeles",to:"Port Angeles",miles:86,
+ stops:[{n:"Port Angeles",f:1},{n:"Hurricane Ridge",m:"ca. 20 Meilen"},{n:"Lake Crescent",m:"ca. 39 Meilen"},{n:"Sol Duc Falls",m:"ca. 15 Meilen"},{n:"Port Angeles",m:"ca. 21 Meilen",l:1}],
+ hotel:{nm:"Red Lion Hotel Port Angeles Harbor",addr:"221 N Lincoln St, Port Angeles, WA 98362",ci:"–",co:"11:00",bkf:false,bkf_i:"❌ Nicht inklusive",bkf_t:"The Empossible Eden Café – Cinnamon Roll Pancakes sind legendär!"},
+ hl:[{e:"⛰️",n:"Hurricane Ridge",d:"1.600 m Höhe – Panoramablick auf Olympic Mountains & Vancouver Island. Fahrt 45 Min."},{e:"💎",n:"Lake Crescent",d:"Kristallklarer Gletschersee, tiefes Blau – Barnes Point Loop Trail (ca. 3 km)"},{e:"💦",n:"Sol Duc Falls",d:"Spektakulärer Wasserfall im Urwald – 2,5 km Fußweg hin/zurück"},{e:"🌿",n:"Marymere Falls",d:"Einfacher Spaziergang (2,5 km) durch Douglasien-Urwald am Lake Crescent"}],
+ wx:{t:"11–16°C",d:"Hurricane Ridge: windiger & kühler – Jacke mitnehmen!"}},
+
+{id:4,date:"09.06.26",tag:"Tag 5",type:"drive",title:"Port Angeles → Kalaloch",from:"Port Angeles",to:"Kalaloch",miles:156,
+ stops:[{n:"Port Angeles",f:1},{n:"Rialto Beach",m:"ca. 68 Meilen"},{n:"Hoh Rainforest",m:"ca. 46 Meilen"},{n:"Ruby Beach ⭐",m:"ca. 30 Meilen"},{n:"Kalaloch Lodge",m:"ca. 12 Meilen",l:1}],
+ hotel:{nm:"Kalaloch Lodge at Olympic NP",addr:"157151 US-101, Forks, WA 98331",ci:"16:00",co:"11:00",bkf:false,bkf_i:"❌ Nicht inklusive – sehr abgelegen, keine Alternativen!",bkf_t:"Creekside Restaurant (direkt in der Lodge) – Eier, Pancakes, Bacon – früh erscheinen!"},
+ hl:[{e:"🪵",n:"Rialto Beach",d:"Dramatischer Strand mit Sea Stacks & riesigen Treibholzstämmen – Hole-in-the-Wall"},{e:"🌿",n:"Hoh Rainforest",d:"Hall of Mosses – märchenhafter Urwald, Moose hängen meterlang. Regenzeug mitbringen!"},{e:"⭐",n:"Ruby Beach",d:"PFLICHT! Ikonischste Küste der USA – Sea Stacks, türkiser Pazifik, Treibholz. 30 Min. Stopp"},{e:"🐋",n:"Kalaloch Beach",d:"Bester Spot der Route für Wal-Sichtungen vom Land – besonders morgens & abends"}],
+ wx:{t:"10–15°C",d:"Nebelig, feucht – typisch Regenwald. Regenkleidung Pflicht!"}},
+
+{id:5,date:"10.06.26",tag:"Tag 6",type:"drive",title:"Kalaloch → Portland",from:"Kalaloch",to:"Portland",miles:285,
+ stops:[{n:"Kalaloch",f:1},{n:"Mount St. Helens / Johnston Ridge",m:"ca. 184 Meilen"},{n:"Portland / Benson Hotel",m:"ca. 100 Meilen",l:1}],
+ hotel:{nm:"The Benson Portland",addr:"309 SW Broadway, Portland, OR 97205",ci:"16:00",co:"12:00",bkf:false,bkf_i:"❌ Nicht inklusive",bkf_t:"Slappy Cakes (4246 SE Belmont) – Pancakes selbst am Tisch backen! Einmaliges Erlebnis"},
+ hl:[{e:"🌋",n:"Mount St. Helens",d:"Vulkanausbruch 1980 – Johnston Ridge Observatory, grandioser Blick in den Krater"},{e:"🌉",n:"Portland Skyline",d:"Einfahrt über die Brücke am Abend – Stadt leuchtet wunderschön"}],
+ wx:{t:"15–23°C",d:"Meist trocken, deutlich wärmer als die Küste"}},
+
+{id:6,date:"11.06.26",tag:"Tag 7",type:"rest",title:"Portland – Erkundung",from:"Portland",to:"Portland",miles:86,
+ stops:[{n:"Portland",f:1},{n:"Multnomah Falls (Permit!)",m:"ca. 30 Meilen"},{n:"Vista House",m:"ca. 9 Meilen"},{n:"Powell's Books",m:"ca. 36 Meilen"},{n:"Pioneer Place / Shopping",m:"ca. 12 Meilen",l:1}],
+ hotel:{nm:"The Benson Portland",addr:"309 SW Broadway, Portland, OR 97205",ci:"–",co:"12:00",bkf:false,bkf_i:"❌ Nicht inklusive",bkf_t:"The Original Pancake House (8601 SW 24th Ave) – Klassiker seit 70 Jahren"},
+ hl:[{e:"💦",n:"Multnomah Falls",d:"189 m – zweithöchster ganzj. Wasserfall USA. ⚠️ Waterfall Corridor Permit vorab buchen!"},{e:"🏛️",n:"Vista House",d:"Historischer Aussichtspunkt über Columbia River Gorge – free entry"},{e:"📚",n:"Powell's Books",d:"Größte unabhängige Buchhandlung der WELT – mehrere Stockwerke, ein Muss!"},{e:"🛍️",n:"Washington Square Mall & Pioneer Place",d:"Shopping, Mittagspause, American-Brands günstiger als in DE"}],
+ wx:{t:"17–25°C",d:"Schönstes Wetter der Route wahrscheinlich hier! Sonnig"}},
+
+{id:7,date:"12.06.26",tag:"Tag 8",type:"drive",title:"Portland → Bend",from:"Portland",to:"Bend",miles:185,
+ stops:[{n:"Portland",f:1},{n:"Sandy (Voodoo Doughnut)",m:"ca. 29 Meilen"},{n:"Timberline Lodge",m:"ca. 34 Meilen"},{n:"Trillium Lake",m:"ca. 10 Meilen"},{n:"Smith Rock State Park",m:"ca. 86 Meilen"},{n:"Bend",m:"ca. 27 Meilen",l:1}],
+ hotel:{nm:"Hampton Inn & Suites Bend",addr:"730 SW Columbia St, Bend, OR 97702",ci:"15:00",co:"12:00",bkf:true,bkf_i:"✅ Kostenlos inklusive!",bkf_t:"Hot Breakfast täglich ab 6:00 Uhr – Eier, Speck, Würstchen, Pancakes, Obst"},
+ hl:[{e:"🍩",n:"Voodoo Doughnut Sandy",d:"Kultigste Donut-Kette Oregons – Apple Fritter ist ein Muss, früh hinfahren"},{e:"🏔️",n:"Timberline Lodge",d:"Historic Lodge am Mount Hood – The Shining wurde hier gedreht! Kaffeepause"},{e:"🪞",n:"Trillium Lake",d:"Perfekte Spiegelung des Mount Hood – das Oregon-Postkartenmotiv"},{e:"🧗",n:"Smith Rock State Park",d:"Weltklasse-Klettergebiet in der Hochwüste – Monkey Face Felsen, toller Overlook"}],
+ wx:{t:"17–28°C",d:"Klar & sonnig – Übergang zur Hochwüste. Wasser mitnehmen!"}},
+
+{id:8,date:"13.06.26",tag:"Tag 9",type:"drive",title:"Bend → Burns",from:"Bend",to:"Burns/Hines",miles:239,
+ stops:[{n:"Bend",f:1},{n:"Painted Hills (John Day Fossil Beds)",m:"ca. 88 Meilen"},{n:"Burns / Hines",m:"ca. 150 Meilen",l:1}],
+ hotel:{nm:"Best Western Rory & Ryan Inns",addr:"534 US-20, Hines, OR 97738",ci:"15:00",co:"11:00",bkf:true,bkf_i:"✅ Kostenlos inklusive!",bkf_t:"Frühstücksbuffet täglich ab 6:00 Uhr – Eier, Bacon, Müsli, Joghurt"},
+ hl:[{e:"🎨",n:"Painted Hills",d:"7 Wunder Oregons – 30 Mio. Jahre Erdgeschichte! Trails: Painted Cove (0,4 km) & Overlook (0,8 km). Früh fahren für beste Farben!"},{e:"🪨",n:"Picture Gorge & Sheep Rock",d:"Dramatische Basaltschlucht direkt am Hwy – einfach durchfahren und staunen"},{e:"🌵",n:"Oregon Hochwüste",d:"Surreale Stille – weite Ebenen, wenig Verkehr, perfekte Fotokulisse"}],
+ wx:{t:"20–33°C",d:"⚠️ Heiß & trocken – viel Wasser einpacken, kein Trinkwasser on-route!"}},
+
+{id:9,date:"14.06.26",tag:"Tag 10",type:"drive",title:"Burns → Boise",from:"Burns",to:"Boise",miles:200,
+ stops:[{n:"Burns",f:1},{n:"Leslie Gulch (Schotterstr. ⚠️)",m:"ca. 100 Meilen"},{n:"Boise / Garden City",m:"ca. 100 Meilen",l:1}],
+ hotel:{nm:"The Riverside Hotel",addr:"2900 W Chinden Blvd, Garden City, ID 83714",ci:"16:00",co:"11:00",bkf:true,bkf_i:"✅ Kostenlos inklusive!",bkf_t:"Frühstücksbuffet täglich – sehr gute Gästebewertungen, direkt am Boise River"},
+ hl:[{e:"🏜️",n:"Leslie Gulch",d:"Vulkanisches Wunderland – Hoodoos, Honeycombs, Dickhornschafe. ⚠️ 40 km Schotterstraße, nur bei Trockenheit!"},{e:"🇪🇸",n:"Basque Block Boise",d:"Grove St – weltgrößte Basken-Community außerhalb Europas. Museum & Tapas"},{e:"🎨",n:"Freak Alley Gallery",d:"Größte Open-Air-Graffiti-Galerie des Nordwestens – kostenfrei"},{e:"🌊",n:"Boise River Greenbelt",d:"Brennan's Wave – Kajakfahrer & Surfer mitten in der Stadt. Promenade 40 km"}],
+ wx:{t:"22–35°C",d:"⚠️ Heiß! Wüstenklima. Nachmittags Aktivitäten einschränken"}},
+
+{id:10,date:"15.06.26",tag:"Tag 11",type:"drive",title:"Boise → Twin Falls",from:"Boise",to:"Twin Falls",miles:248,
+ stops:[{n:"Boise",f:1},{n:"Ponderosa Pine Scenic Byway",m:"ca. 75 Meilen"},{n:"Stanley, Idaho",m:"ca. 58 Meilen"},{n:"Sawtooth Byway / Sun Valley",m:"ca. 60 Meilen"},{n:"Twin Falls",m:"ca. 55 Meilen",l:1}],
+ hotel:{nm:"Holiday Inn Express & Suites Twin Falls",addr:"1554 Fillmore St, Twin Falls, ID 83301",ci:"15:00",co:"11:00",bkf:true,bkf_i:"✅ Kostenlos inklusive!",bkf_t:"Hot Express Start Breakfast 6:00–9:00 Uhr – Eier, Kartoffeln, Speck & Wurst"},
+ hl:[{e:"🌲",n:"Kirkham Hot Springs",d:"Direkt am Hwy 21 – natürliche Thermalbäder direkt am Payette River. Kurzstopp!"},{e:"🏔️",n:"Stanley & Sawtooth Mountains",d:"Gezackte Granitgipfel – Redfish Lake, Stanley Lake. Herz der Idaho Rockies"},{e:"⛷️",n:"Sun Valley / Ketchum",d:"Erstes geplantes Skiresort der USA (1936) – Mittagspause, schicker Ort"},{e:"💦",n:"Shoshone Falls",d:"Höher als Niagara! Im Juni volle Schneeschmelze = maximale Kraft"},{e:"🪂",n:"Perrine Bridge",d:"Legales BASE-Jumping ohne Genehmigung – täglich Springer, toller Aussichtspunkt"}],
+ wx:{t:"16–26°C",d:"Angenehm, bergig – Temperaturunterschied zwischen Tal & Pass beachten"}},
+
+{id:11,date:"16.06.26",tag:"Tag 12",type:"drive",title:"Twin Falls → Yellowstone",from:"Twin Falls",to:"Yellowstone / Grant Village",miles:280,
+ stops:[{n:"Twin Falls",f:1},{n:"Craters of the Moon",m:"ca. 95 Meilen"},{n:"Idaho Falls (Mittagsstopp)",m:"ca. 65 Meilen"},{n:"Ashton-Flagg Ranch Road ⚠️",m:"ca. 50 Meilen Schotter"},{n:"Lewis Falls",m:""},{n:"Grant Village",m:"ca. 30 Meilen",l:1}],
+ hotel:{nm:"Grant Village – Yellowstone NP",addr:"24 Rainbow Lp, Yellowstone NP, WY 82190",ci:"16:30",co:"11:00",bkf:false,bkf_i:"❌ Nicht inklusive (Nationalpark-Lodge)",bkf_t:"Grant Village Dining Room (6:30–10:00) oder Lake House Restaurant am Yellowstone Lake"},
+ hl:[{e:"🌑",n:"Craters of the Moon",d:"NASA-Astronauten trainierten hier! Mondlandschaft, 2.000 Jahre alt. 7-Mile Loop Drive, 1h reicht"},{e:"🌊",n:"Idaho Falls River Walk",d:"8 km Uferweg mitten in der Stadt – perfekte Mittagspause"},{e:"🛤️",n:"Ashton-Flagg Ranch Road",d:"⚠️ 75 km Schotter durch Grizzly-Territorium! 2,5–3h einplanen. Erst ab 1. Juni offen"},{e:"💦",n:"Lewis Falls",d:"Direkt am South Entrance – 15 Min. Stopp, Juni = volle Schneeschmelze"}],
+ wx:{t:"8–20°C",d:"Im Park deutlich kühler – Lagen-System anziehen, Gewittergefahr nachmittags"}},
+
+{id:12,date:"17.06.26",tag:"Tag 13",type:"rest",title:"Yellowstone – Erkundung",from:"Grant Village",to:"Grant Village",miles:150,
+ stops:[{n:"West Thumb Geyser Basin",f:1},{n:"Old Faithful (Upper Geyser Basin)",m:"ca. 17 Meilen"},{n:"Midway Geyser Basin",m:"ca. 5 Meilen"},{n:"Lamar Valley ⭐",m:"ca. 60 Meilen Umweg"},{n:"Grand Canyon of Yellowstone",m:"ca. 25 Meilen"},{n:"Hayden Valley",m:"ca. 15 Meilen",l:1}],
+ hotel:{nm:"Grant Village – Yellowstone NP",addr:"24 Rainbow Lp, Yellowstone NP, WY 82190",ci:"–",co:"11:00",bkf:false,bkf_i:"❌ Nicht inklusive",bkf_t:"Grant Village Dining Room (6:30–10:00) – ⚠️ Hochsaison: früh frühstücken!"},
+ hl:[{e:"♨️",n:"West Thumb Geyser Basin",d:"Heißquellen direkt am Yellowstone Lake – perfekter Morgenstart (3 Meilen)"},{e:"⛲",n:"Old Faithful",d:"Alle ~90 Min. – Eruption-Zeiten online prüfen! Früh da sein, Parkplatz voll"},{e:"🌈",n:"Grand Prismatic Spring",d:"Midway Basin – bunteste Thermalquelle der Welt. Overlook für Draufsicht!"},{e:"🐺",n:"Lamar Valley ⭐",d:"Amerikas Serengeti – Wölfe, Grizzlys, Bisons. BESTES Wildlife im Park! Umweg lohnt sich"},{e:"🏞️",n:"Grand Canyon of Yellowstone",d:"Lower Falls (94 m) – Artist Point Aussicht. North & South Rim Trail"},{e:"🦬",n:"Hayden Valley",d:"Riesige Bisonherden, Elche am Fluss, Adler. Fernglas mitnehmen!"}],
+ wx:{t:"7–18°C",d:"⚠️ Gewittergefahr ab 14 Uhr – morgens früh starten für beste Wildtier-Chancen"}},
+
+{id:13,date:"18.06.26",tag:"Tag 14",type:"drive",title:"Yellowstone → Missoula",from:"Yellowstone / Grant Village",to:"Missoula",miles:310,
+ stops:[{n:"Grant Village",f:1},{n:"West Yellowstone",m:"ca. 51 Meilen"},{n:"Earthquake Lake",m:"ca. 16 Meilen"},{n:"Madison Valley / Ennis",m:"ca. 70 Meilen"},{n:"Garnet Ghost Town",m:"ca. 120 Meilen"},{n:"Missoula",m:"ca. 30 Meilen",l:1}],
+ hotel:{nm:"Best Western Plus Grant Creek Inn",addr:"5280 Grant Creek Rd, Missoula, MT 59808",ci:"15:00",co:"12:00",bkf:true,bkf_i:"✅ Kostenlos inklusive!",bkf_t:"Europäisches Buffet – Eier, Pancakes, Kartoffeln & Bratensoße – einer der besten Franchise-Frühstücke"},
+ hl:[{e:"🐻",n:"Grizzly & Wolf Discovery Center",d:"West Yellowstone – Bären & Wölfe sicher aus nächster Nähe, 1–2 Stunden"},{e:"💥",n:"Earthquake Lake",d:"1959: Erdbeben der Stärke 7,5 erschuf in einer Nacht diesen See – Geisterbäume ragen aus dem Wasser"},{e:"🤠",n:"Ennis, Montana",d:"Authentischste Western-Stadt der Route – Willie's Distillery, Holzstege, Yesterday's Soda Fountain"},{e:"👻",n:"Garnet Ghost Town",d:"Besterhaltene Geisterstadt Montanas – 10 $/Person, 30+ Gebäude begehbar"},{e:"🏄",n:"Missoula City",d:"Brennan's Wave, Craft-Bier-Hauptstadt Montanas, Bayern Brewing (Reinheitsgebot!)"}],
+ wx:{t:"11–24°C",d:"Big Sky Country – weite Sicht, meist heiter & warm"}},
+
+{id:14,date:"19.06.26",tag:"Tag 15",type:"drive",title:"Missoula → Glacier NP",from:"Missoula",to:"East Glacier Park",miles:200,
+ stops:[{n:"Missoula",f:1},{n:"CSKT Bison Range",m:"ca. 44 Meilen"},{n:"St. Ignatius Mission",m:"ca. 15 Meilen"},{n:"Flathead Lake (Hwy 35 Ostküste)",m:"ca. 50 Meilen"},{n:"Bigfork",m:"ca. 25 Meilen"},{n:"East Glacier Park",m:"ca. 104 Meilen",l:1}],
+ hotel:{nm:"Glacier Park Lodge",addr:"499 MT-49, East Glacier Park, MT 59434",ci:"15:00",co:"11:00",bkf:false,bkf_i:"❌ Nicht inklusive (Historic Lodge)",bkf_t:"Great Northern Dining Room (im Hotel): Buffet & Pancakes mit Huckleberry-Sirup, oder Two Medicine Grill (Fußweg)"},
+ hl:[{e:"🦬",n:"CSKT Bison Range",d:"350–500 Bisons! Red Sleep Mountain Drive (2h). ⚠️ Kein America the Beautiful Pass – 20$/Auto"},{e:"⛪",n:"St. Ignatius Mission",d:"Kleine Sixtinische Kapelle in Montana – 58 selbst gemalte Deckengemälde von 1891"},{e:"🫐",n:"Flathead Lake Ostküste (Hwy 35)",d:"Sauberster See der USA – Kirschstände im Juni! Stopp in Bigfork (schönstes Städtchen)"},{e:"🏛️",n:"Glacier Park Lodge",d:"Kathedrale aus 800-jährigen Douglasien-Stämmen – auch für Nicht-Gäste begehbar"}],
+ wx:{t:"13–22°C",d:"Meist heiter – in East Glacier abends oft windig"}},
+
+{id:15,date:"20.06.26",tag:"Tag 16",type:"rest",title:"Glacier National Park",from:"East Glacier Park",to:"East Glacier Park",miles:114,
+ stops:[{n:"Two Medicine Valley",f:1},{n:"Many Glacier",m:"ca. 59 Meilen"},{n:"Going-to-the-Sun Road ⚠️",m:"ca. 20 Meilen"},{n:"Logan Pass / Hidden Lake",m:"ca. 18 Meilen",l:1}],
+ hotel:{nm:"Glacier Park Lodge",addr:"499 MT-49, East Glacier Park, MT 59434",ci:"–",co:"11:00",bkf:false,bkf_i:"❌ Nicht inklusive",bkf_t:"Two Medicine Grill (kurzer Fußweg) – Pancakes, Eggs & Bacon – sehr beliebt bei Einheimischen"},
+ hl:[{e:"🏔️",n:"Two Medicine Valley",d:"Heiliges Land der Blackfeet. Running Eagle Falls (1 km, barrierefrei), ruhiger als West Glacier"},{e:"🐻",n:"Many Glacier",d:"Schweiz Nordamerikas – bester Bärenspot der USA! Swiftcurrent Lake, Swiss Chalet Hotel von 1914"},{e:"🛣️",n:"Going-to-the-Sun Road",d:"⚠️ Am 20.06. evtl. noch gesperrt bis Logan Pass – vorab auf nps.gov prüfen!"},{e:"🐐",n:"Hidden Lake Overlook",d:"Ab Logan Pass: 2,4 km durch Wildblumenwiesen – Bergziegen laufen oft am Weg! Juni = Huckleberry blüht"}],
+ wx:{t:"9–19°C",d:"Logan Pass: 4–12°C, windig. Fleece & Regenjacke unbedingt einpacken!"}},
+
+{id:16,date:"21.06.26",tag:"Tag 17",type:"drive",title:"Glacier NP → Coeur d'Alene",from:"East Glacier Park",to:"Coeur d'Alene",miles:289,
+ stops:[{n:"East Glacier Park",f:1},{n:"Marias Pass (US-2)",m:"ca. 10 Meilen"},{n:"Thompson Falls",m:"ca. 220 Meilen"},{n:"Coeur d'Alene",m:"ca. 69 Meilen",l:1}],
+ hotel:{nm:"Best Western Plus Coeur d'Alene Inn",addr:"506 West Appleway Ave., Coeur d'Alene, ID 83814",ci:"16:00",co:"12:00",bkf:true,bkf_i:"✅ Kostenlos inklusive!",bkf_t:"Chef-prepared Buffet mit Omelette-Station! Täglich – eines der besten Hotel-Frühstücke der Route"},
+ hl:[{e:"🏔️",n:"Marias Pass (US-2)",d:"Niedrigster Rocky Mountain Pass nördlich von NM – Monument & Panorama, 5 Min. Stopp"},{e:"🌊",n:"Thompson Falls & Historic Bridge",d:"Massiver Damm am Clark Fork, Historic High Bridge (1911) – kurzer Spaziergang über die Brücke"},{e:"⛵",n:"Floating Boardwalk CDA",d:"Längster schwimmender Steg der WELT (~1 km), kostenloser Zugang, Hafen-Panorama"},{e:"🥾",n:"Tubbs Hill Trail",d:"3,5 km direkt am See – versteckte Badebuchten, perfekter Sonnenuntergang"}],
+ wx:{t:"15–27°C",d:"Warm & sonnig in Coeur d'Alene"}},
+
+{id:17,date:"22.06.26",tag:"Tag 18",type:"drive",title:"Coeur d'Alene → Mount Rainier",from:"Coeur d'Alene",to:"Ashford (Mount Rainier)",miles:309,
+ stops:[{n:"Coeur d'Alene",f:1},{n:"Wild Horses Monument",m:"ca. 179 Meilen"},{n:"Yakima River Canyon Byway",m:"ca. 42 Meilen"},{n:"White Pass Scenic Byway",m:"ca. 88 Meilen"},{n:"Ashford",m:"ca. 20 Meilen",l:1}],
+ hotel:{nm:"Paradise Village Hotel",addr:"31811 WA-706, Ashford, WA 98304",ci:"15:00",co:"11:00",bkf:true,bkf_i:"✅ Inklusive (Self-Service-Buffet)",bkf_t:"Ukrainisches Restaurant vor Ort – Eier, Toast, Kaffee. Eingang über die Gebäudeseite"},
+ hl:[{e:"🐎",n:"Wild Horses Monument",d:"15 Stahlpferde über dem Columbia River – kurze Wanderung für Nahaufnahme & Panorama"},{e:"🦅",n:"Yakima River Canyon Byway",d:"Basalt-Klippen, Falken & Adler – höchste Raubvogeldichte Washingtons! 45 Min. Umweg"},{e:"🌨️",n:"White Pass Scenic Byway",d:"Clear Creek Falls Overlook – Rainier taucht am Pass plötzlich auf. ⚠️ Großer Temperaturunterschied"}],
+ wx:{t:"12–25°C",d:"24°C in Yakima vs 10°C am White Pass – Lagen einpacken"}},
+
+{id:18,date:"23.06.26",tag:"Tag 19",type:"rest",title:"Mount Rainier National Park",from:"Ashford",to:"Ashford",miles:80,
+ stops:[{n:"Longmire",f:1},{n:"Christine Falls",m:"ca. 4 Meilen"},{n:"Narada Falls",m:"ca. 4 Meilen"},{n:"Paradise Visitor Center",m:"ca. 7 Meilen"},{n:"Reflection Lakes",m:"ca. 2 Meilen"},{n:"Box Canyon / Grove of the Patriarchs",m:"ca. 15 Meilen",l:1}],
+ hotel:{nm:"Paradise Village Hotel",addr:"31811 WA-706, Ashford, WA 98304",ci:"–",co:"11:00",bkf:true,bkf_i:"✅ Inklusive",bkf_t:"Früh frühstücken – langer Parktag, früh starten für Parkplätze!"},
+ hl:[{e:"🏛️",n:"Longmire",d:"National Historic District – Museum, National Park Inn Veranda mit Rainier-Blick"},{e:"📸",n:"Christine Falls",d:"Historische Steinbogenbrücke rahmt den Wasserfall – bestes Fotomotiv des Tages"},{e:"🌈",n:"Narada Falls",d:"57 m hoch, Regenbogen garantiert! ⚠️ Nasser Weg, Wanderschuhe & leichte Jacke mitnehmen"},{e:"🌺",n:"Skyline Trail (Paradise)",d:"8 km durch alpine Wildblumenwiesen – Myrtle Falls & direkte Rainier-Aussicht"},{e:"🪞",n:"Reflection Lakes",d:"Perfektes Spiegelbild des Mount Rainier – früh morgens am ruhigsten & schärfsten"},{e:"📦",n:"Box Canyon",d:"Brücke über 30 m tiefe Felsspalte – kurzer barrierefreier Rundweg, sehr beeindruckend"}],
+ wx:{t:"7–15°C",d:"Paradise: Schneereste möglich! Jacke Pflicht, Sonnencreme nicht vergessen (Höhe)"}},
+
+{id:19,date:"24.06.26",tag:"Tag 20",type:"fly",title:"Abreise – Seattle → Berlin",from:"Ashford",to:"Berlin",miles:80,
+ stops:[{n:"Ashford (Checkout spät. 11:00!)",f:1},{n:"Museum of Flight (10:00–13:00)",m:"ca. 65 Meilen"},{n:"SeaTac Airport (Abgabe Mietwagen)",m:"ca. 5 Meilen",l:1}],
+ hotel:{nm:"Rückflug – LH 489",addr:"18:50 Uhr Seattle → München → Berlin (Ank. 25.06., 13:40 Uhr)",ci:"–",co:"–",bkf:true,bkf_i:"✅ Inklusive (letzter Morgen)",bkf_t:"Früh frühstücken – Abfahrt spätestens 11:00 Uhr!"},
+ hl:[{e:"⏰",n:"WICHTIGER ZEITPLAN",d:"11:00 Checkout → 13:00 Museum verlassen → 14:00 Mietwagen zurück (Tank voll!) → 15:50 am Schalter (3h vor Abflug)"},{e:"🚀",n:"Museum of Flight",d:"Boeing 747, Concorde, Air Force One, Space Shuttle Trainer – 10:00–17:00, 29$/Erw. Mindestens 2 Stunden!"},{e:"🚗",n:"Mietwagen-Rückgabe Alamo SeaTac",d:"Tank VOLL abgeben! Letzte Tankstelle vor Flughafen nutzen"}],
+ wx:{t:"14–20°C",d:"Seattle im Juni: mild & oft bewölkt"}}
+];
+
+// App state
+let page='home', dayId=0, tab='route';
+let expenses={}, mileage={}, rentalCosts={items:[]};
+let usdToEur=null; // current exchange rate
+
+// ── IndexedDB für PDF-Dokumente ──────────────────────────────
+let db=null;
+function initDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open('rb26_docs',1);
+    req.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains('docs')){
+        const s=d.createObjectStore('docs',{keyPath:'id',autoIncrement:true});
+        s.createIndex('dayId','dayId',{unique:false});
+      }
+    };
+    req.onsuccess=e=>{db=e.target.result;res(db);};
+    req.onerror=()=>rej();
+  });
+}
+function dbSaveDoc(dayId,name,size,dataUrl){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction('docs','readwrite');
+    tx.objectStore('docs').add({dayId,name,size,dataUrl,ts:Date.now()});
+    tx.oncomplete=()=>res();tx.onerror=()=>rej();
+  });
+}
+function dbGetDocs(dayId){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction('docs','readonly');
+    const req=tx.objectStore('docs').index('dayId').getAll(dayId);
+    req.onsuccess=()=>res(req.result);req.onerror=()=>rej();
+  });
+}
+function dbDeleteDoc(id){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction('docs','readwrite');
+    tx.objectStore('docs').delete(id);
+    tx.oncomplete=()=>res();tx.onerror=()=>rej();
+  });
+}
+
+async function loadDocsForDay(dayId){
+  const wrap=document.getElementById(`docs-wrap-${dayId}`);
+  if(!wrap)return;
+  try{
+    const docs=await dbGetDocs(dayId);
+    wrap.innerHTML=renderDocsList(dayId,docs);
+  }catch(e){wrap.innerHTML=`<div style="color:var(--red);font-size:13px;padding:12px">Fehler beim Laden der Dokumente.</div>`;}
+}
+
+function renderDocsList(dayId,docs){
+  const fmt=b=>b<1024*1024?(b/1024).toFixed(0)+' KB':(b/1024/1024).toFixed(1)+' MB';
+  const fmtDate=ts=>new Date(ts).toLocaleDateString('de-DE');
+  const list=docs.length
+    ? docs.map(d=>`<div class="doc-item">
+        <div class="doc-ico">📄</div>
+        <div class="doc-info">
+          <div class="doc-name">${d.name}</div>
+          <div class="doc-meta">${fmt(d.size)} · ${fmtDate(d.ts)}</div>
+        </div>
+        <div class="doc-actions">
+          <button class="doc-btn view" onclick="viewDoc(${d.id})">👁 Öffnen</button>
+          <button class="doc-btn del" onclick="delDoc(${d.id},${dayId})">×</button>
+        </div>
+      </div>`).join('')
+    : `<div style="text-align:center;padding:16px 0;font-size:13px;color:var(--t3)">Noch keine Dokumente hochgeladen</div>`;
+  return`${list}
+    <input type="file" id="file-in-${dayId}" accept=".pdf" style="display:none" onchange="uploadDoc(${dayId},this)">
+    <div class="upload-area" onclick="document.getElementById('file-in-${dayId}').click()">
+      <div class="upload-area-ico">📎</div>
+      <div class="upload-area-lbl">PDF hochladen</div>
+      <div class="upload-area-sub">Voucher, Buchungsbestätigung, Eintrittskarte…</div>
+    </div>`;
+}
+
+async function uploadDoc(dayId,input){
+  const file=input.files[0];
+  if(!file)return;
+  const wrap=document.getElementById(`docs-wrap-${dayId}`);
+  if(wrap)wrap.innerHTML=`<div style="text-align:center;padding:20px;color:var(--t3);font-size:13px">⏳ Wird hochgeladen…</div>`;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    try{
+      await dbSaveDoc(dayId,file.name,file.size,e.target.result);
+      await loadDocsForDay(dayId);
+    }catch(err){if(wrap)wrap.innerHTML=`<div style="color:var(--red);padding:12px;font-size:13px">Fehler beim Speichern.</div>`;}
+  };
+  reader.readAsDataURL(file);
+}
+
+async function viewDoc(id){
+  const tx=db.transaction('docs','readonly');
+  const req=tx.objectStore('docs').get(id);
+  req.onsuccess=()=>{
+    if(!req.result)return;
+    const a=document.createElement('a');
+    a.href=req.result.dataUrl;
+    a.target='_blank';
+    a.download=req.result.name;
+    a.click();
+  };
+}
+
+async function delDoc(id,dayId){
+  await dbDeleteDoc(id);
+  await loadDocsForDay(dayId);
+}
+
+function renderDocs(d){
+  setTimeout(()=>loadDocsForDay(d.id),30);
+  return`<div class="card"><div class="card-hdr"><span class="card-ttl">📄 Dokumente</span></div>
+    <div class="card-body" id="docs-wrap-${d.id}">
+      <div style="text-align:center;padding:20px;color:var(--t3);font-size:13px">Wird geladen…</div>
+    </div></div>`;
+}
+// ─────────────────────────────────────────────────────────────
+
+function loadData(){
+  try{expenses=JSON.parse(localStorage.getItem('rb26_exp')||'{}');}catch(e){expenses={};}
+  try{mileage=JSON.parse(localStorage.getItem('rb26_mil')||'{}');}catch(e){mileage={};}
+  try{rentalCosts=JSON.parse(localStorage.getItem('rb26_car')||'{"items":[]}');}catch(e){rentalCosts={items:[]};}
+  try{const saved=localStorage.getItem('rb26_rate');if(saved){const p=JSON.parse(saved);usdToEur=p.rate;}}catch(e){}
+  migrateExpenses();
+}
+function saveCar(){localStorage.setItem('rb26_car',JSON.stringify(rentalCosts));showSaved();}
+
+// Alte Datenformat (Strings/Zahlen) → neues Array-Format umwandeln
+function migrateExpenses(){
+  const keys=['mkk','mdk','vkk','vdk'];
+  Object.keys(expenses).forEach(dayKey=>{
+    if(!expenses[dayKey])return;
+    keys.forEach(k=>{
+      if(!Array.isArray(expenses[dayKey][k])){
+        expenses[dayKey][k]=[];
+      }
+    });
+  });
+}
+
+async function fetchExchangeRate(){
+  try{
+    const res=await fetch('https://open.er-api.com/v6/latest/USD');
+    if(!res.ok)throw new Error();
+    const data=await res.json();
+    const rate=data.rates&&data.rates.EUR;
+    if(rate){
+      usdToEur=rate;
+      localStorage.setItem('rb26_rate',JSON.stringify({rate,ts:Date.now()}));
+      if(page==='total')render();
+    }
+  }catch(e){/* kein Netz – letzten Kurs behalten */}
+}
+
+// Koordinaten pro Tag (Zielort)
+const DAY_COORDS={
+  0:[47.606,-122.332],1:[47.606,-122.332],2:[48.118,-123.431],3:[48.118,-123.431],
+  4:[47.609,-124.375],5:[45.523,-122.677],6:[45.523,-122.677],7:[44.058,-121.315],
+  8:[43.586,-119.054],9:[43.615,-116.202],10:[42.556,-114.461],11:[44.382,-110.548],
+  12:[44.382,-110.548],13:[46.872,-113.994],14:[48.451,-113.218],15:[48.451,-113.218],
+  16:[47.678,-116.780],17:[46.762,-121.954],18:[46.762,-121.954],19:[47.606,-122.332]
+};
+const TRIP_START=new Date('2026-06-05');
+const TRIP_END=new Date('2026-06-24');
+
+let wxCache={}; // {lat_lon: {date: {tmin,tmax,precip,code}}}
+
+function loadWxCache(){
+  try{wxCache=JSON.parse(localStorage.getItem('rb26_wx')||'{}');}catch(e){wxCache={};}
+}
+function saveWxCache(){localStorage.setItem('rb26_wx',JSON.stringify(wxCache));}
+
+function wxEmoji(code){
+  if(code==null)return'❓';
+  if(code===0)return'☀️';
+  if(code<=3)return'⛅';
+  if(code<=48)return'🌫️';
+  if(code<=55)return'🌦️';
+  if(code<=65)return'🌧️';
+  if(code<=77)return'🌨️';
+  if(code<=82)return'🌧️';
+  return'⛈️';
+}
+function wxLabel(code){
+  if(code==null)return'–';
+  if(code===0)return'Klar';if(code<=3)return'Bewölkt';
+  if(code<=48)return'Nebel';if(code<=55)return'Nieselregen';
+  if(code<=65)return'Regen';if(code<=77)return'Schnee';
+  if(code<=82)return'Schauer';return'Gewitter';
+}
+
+async function fetchWeatherAll(){
+  if(!navigator.onLine)return false;
+  // Unique koordinaten-Sets sammeln
+  const groups={};
+  DAYS.forEach(d=>{
+    const c=DAY_COORDS[d.id];
+    if(!c)return;
+    const key=`${c[0]}_${c[1]}`;
+    if(!groups[key])groups[key]={lat:c[0],lon:c[1],days:[]};
+    // ISO-Datum berechnen
+    const dt=new Date(TRIP_START);dt.setDate(dt.getDate()+d.id);
+    groups[key].days.push({id:d.id,date:dt.toISOString().slice(0,10)});
+  });
+  let anySuccess=false;
+  await Promise.all(Object.values(groups).map(async g=>{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${g.lat}&longitude=${g.lon}`+
+      `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode`+
+      `&timezone=America%2FLos_Angeles&start_date=2026-06-05&end_date=2026-06-24`;
+    try{
+      const r=await fetch(url);if(!r.ok)return;
+      const data=await r.json();
+      const key=`${g.lat}_${g.lon}`;
+      if(!wxCache[key])wxCache[key]={};
+      data.daily.time.forEach((date,i)=>{
+        wxCache[key][date]={
+          tmax:Math.round(data.daily.temperature_2m_max[i]),
+          tmin:Math.round(data.daily.temperature_2m_min[i]),
+          precip:data.daily.precipitation_probability_max[i],
+          code:data.daily.weathercode[i]
+        };
+      });
+      anySuccess=true;
+    }catch(e){}
+  }));
+  if(anySuccess){
+    wxCache._updated=Date.now();
+    saveWxCache();
+  }
+  return anySuccess;
+}
+
+function getWxForDay(dayId){
+  const c=DAY_COORDS[dayId];if(!c)return null;
+  const key=`${c[0]}_${c[1]}`;
+  const dt=new Date(TRIP_START);dt.setDate(dt.getDate()+dayId);
+  const date=dt.toISOString().slice(0,10);
+  return wxCache[key]&&wxCache[key][date]?wxCache[key][date]:null;
+}
+
+async function renderWeatherOverview(){
+  document.getElementById('app').innerHTML=buildWeatherShell();
+  // Wetterdaten laden
+  const loading=document.getElementById('wx-loading');
+  const grid=document.getElementById('wx-grid');
+  const updated=document.getElementById('wx-updated');
+  if(navigator.onLine){
+    const ok=await fetchWeatherAll();
+    if(loading)loading.style.display='none';
+    if(ok&&updated){
+      const ts=wxCache._updated;
+      updated.textContent='🟢 Live-Daten · Stand: '+new Date(ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    }
+  }else{
+    if(loading)loading.innerHTML='📵 Offline – zeige gespeicherte Daten';
+    setTimeout(()=>{if(loading)loading.style.display='none';},2000);
+  }
+  if(grid)grid.innerHTML=buildWxGrid();
+}
+
+function buildWeatherShell(){
+  const ts=wxCache._updated;
+  const updStr=ts?'Stand: '+new Date(ts).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'Noch nicht geladen';
+  return`<div class="nav"><div class="nav-in">
+    <button class="nav-back" onclick="page='home';render()">‹ Übersicht</button>
+    <span class="nav-title">Wetter</span>
+    <button class="add-btn" onclick="refreshWeather()" style="min-width:56px">↻ Update</button>
+  </div></div>
+  <div class="day-hero"><div class="hero-tag">05.06. – 24.06.2026</div>
+    <div class="hero-title">Wetterübersicht</div>
+    <div class="hero-route" id="wx-updated">📡 ${updStr}</div>
+  </div>
+  <div id="wx-loading" style="text-align:center;padding:12px;font-size:13px;color:var(--t3)">⏳ Wetterdaten werden geladen…</div>
+  <div class="content" style="padding-top:6px" id="wx-grid"></div>
+  <div class="pb-safe"></div>`;
+}
+
+function buildWxGrid(){
+  return DAYS.map(d=>{
+    const live=getWxForDay(d.id);
+    const isLive=!!live;
+    const tRange=live?`${live.tmin}–${live.tmax}°C`:d.wx.t;
+    const desc=live?wxLabel(live.code):d.wx.d;
+    const ico=live?wxEmoji(live.code):'📋';
+    const precip=live&&live.precip!=null?`💧 ${live.precip}%`:'';
+    const badge=isLive
+      ?`<span style="background:var(--grn-l);color:var(--grn);font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px">Live</span>`
+      :`<span style="background:var(--s2);color:var(--t3);font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px">Plan</span>`;
+    return`<div class="card" style="cursor:pointer" onclick="goDay(${d.id})">
+      <div style="display:flex;align-items:center;gap:12px;padding:11px 13px">
+        <div style="font-size:28px;flex-shrink:0">${ico}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+            <span style="font-size:11px;color:var(--t3)">${d.date}</span>
+            <span style="font-size:12px;font-weight:600;color:var(--t2)">${d.tag}</span>
+            ${badge}
+          </div>
+          <div style="font-size:14px;font-weight:700">${tRange}${precip?' · '+precip:''}</div>
+          <div style="font-size:12px;color:var(--t2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${desc}</div>
+        </div>
+        <div style="color:var(--t3);font-size:15px">›</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function refreshWeather(){
+  const btn=document.querySelector('.add-btn');
+  if(btn){btn.textContent='⏳';btn.disabled=true;}
+  const ok=await fetchWeatherAll();
+  const grid=document.getElementById('wx-grid');
+  const updated=document.getElementById('wx-updated');
+  if(grid)grid.innerHTML=buildWxGrid();
+  if(updated)updated.textContent=ok?'🟢 Live-Daten · Stand: '+new Date(wxCache._updated).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'❌ Kein Internet';
+  if(btn){btn.textContent='↻ Update';btn.disabled=false;}
+}
+
+// ── Backup / Restore ─────────────────────────────────────────
+function exportBackup(){
+  const data={expenses,mileage,rentalCosts,
+    wxCache:localStorage.getItem('rb26_wx'),
+    rate:localStorage.getItem('rb26_rate'),
+    exportedAt:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`roadbook_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function importBackup(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      if(d.expenses){expenses=d.expenses;localStorage.setItem('rb26_exp',JSON.stringify(expenses));}
+      if(d.mileage){mileage=d.mileage;localStorage.setItem('rb26_mil',JSON.stringify(mileage));}
+      if(d.rentalCosts){rentalCosts=d.rentalCosts;localStorage.setItem('rb26_car',JSON.stringify(rentalCosts));}
+      if(d.wxCache)localStorage.setItem('rb26_wx',d.wxCache);
+      if(d.rate)localStorage.setItem('rb26_rate',d.rate);
+      migrateExpenses();loadWxCache();
+      alert('✅ Backup erfolgreich wiederhergestellt!');
+      render();
+    }catch(err){alert('❌ Ungültige Backup-Datei');}
+  };
+  reader.readAsText(file);
+}
+// ─────────────────────────────────────────────────────────────
+function saveMil(){localStorage.setItem('rb26_mil',JSON.stringify(mileage));showSaved();}
+
+let savedTimer;
+function showSaved(){
+  const el=document.getElementById('saved-msg');
+  if(!el)return;
+  el.classList.remove('hide');
+  clearTimeout(savedTimer);
+  savedTimer=setTimeout(()=>el.classList.add('hide'),1800);
+}
+
+function render(){
+  if(page==='weather'){renderWeatherOverview();return;}
+  document.getElementById('app').innerHTML=
+    page==='home'?renderHome():
+    page==='total'?renderTripTotal():
+    page==='car'?renderCarOverview():
+    renderDay();
+}
+
+function renderHome(){
+  const completed=Object.keys(mileage).filter(k=>mileage[k]&&mileage[k].actual).length;
+  return`<div class="nav"><div class="nav-in"><span class="nav-spc"></span><span class="nav-title">Pacific Northwest 2026</span><span class="nav-spc"></span></div></div>
+<div class="home-hdr">
+  <div class="hdr-eyebrow">Road Trip 2026</div>
+  <div class="hdr-title">Pacific Northwest</div>
+  <div class="hdr-dates">05. Juni – 25. Juni 2026</div>
+  <div class="hdr-stats">
+    <div class="stat"><span class="stat-n">20</span><span class="stat-l">Tage</span></div>
+    <div class="stat"><span class="stat-n">${DAYS.reduce((s,d)=>s+d.miles,0).toLocaleString('de-DE')}</span><span class="stat-l">Meilen</span></div>
+    <div class="stat"><span class="stat-n">${completed}</span><span class="stat-l">Erledigt</span></div>
+  </div>
+</div>
+<div class="sec-hdr">Reiseprogramm</div>
+<div class="day-list">${DAYS.map(d=>{
+  const tclass=d.type==='fly'?'t-fly':d.type==='rest'?'t-rest':'';
+  const done=mileage[d.id]&&mileage[d.id].actual?'✓':'';
+  return`<div class="day-card" onclick="goDay(${d.id})">
+    <div class="dc-badge ${tclass}"><span class="dc-n">${done||d.id+1}</span><span class="dc-l">${d.type==='fly'?'Flug':d.type==='rest'?'Rest':'Tag'}</span></div>
+    <div class="dc-info">
+      <div class="dc-date">${d.date}</div>
+      <div class="dc-title">${d.title}</div>
+      <div class="dc-sub">${d.type==='fly'?'✈️ ':d.type==='rest'?'📍 ':'🚗 '}${d.from}${d.from!==d.to?' → '+d.to:''}</div>
+    </div>
+    <div class="dc-arr">›</div>
+  </div>`;}).join('')}
+</div>
+<div class="sec-hdr">Übersichten</div>
+<div style="padding:0 10px;display:flex;flex-direction:column;gap:7px">
+  <div class="day-card" onclick="page='weather';render()" style="background:#fff8ee;border-color:#d4a843">
+    <div class="dc-badge" style="background:#d4a843;color:#fff"><span style="font-size:18px">☀️</span></div>
+    <div class="dc-info">
+      <div class="dc-title" style="color:#7a5a10">Wetterübersicht</div>
+      <div class="dc-sub" style="color:#a07830">Live-Prognose alle 20 Tage</div>
+    </div>
+    <div class="dc-arr" style="color:#d4a843">›</div>
+  </div>
+  <div class="day-card" onclick="page='car';render()" style="background:#e8f0fa;border-color:var(--blu)">
+    <div class="dc-badge" style="background:var(--blu);color:#fff"><span style="font-size:18px">🚗</span></div>
+    <div class="dc-info">
+      <div class="dc-title" style="color:#0f3060">Mietwagen Übersicht</div>
+      <div class="dc-sub" style="color:var(--blu)">Meilen · Sprit · Kosten</div>
+    </div>
+    <div class="dc-arr" style="color:var(--blu)">›</div>
+  </div>
+  <div class="day-card" onclick="page='total';render()" style="background:var(--acc-l);border-color:var(--acc)">
+    <div class="dc-badge" style="background:var(--acc);color:#fff"><span style="font-size:18px">💰</span></div>
+    <div class="dc-info">
+      <div class="dc-title" style="color:var(--acc-d)">Gesamtübersicht Ausgaben</div>
+      <div class="dc-sub" style="color:var(--acc)">Alle Karten · alle 20 Tage</div>
+    </div>
+    <div class="dc-arr" style="color:var(--acc)">›</div>
+  </div>
+</div>
+<div class="sec-hdr">Daten</div>
+<div style="padding:0 10px 24px;display:flex;gap:8px">
+  <button onclick="exportBackup()" style="flex:1;background:var(--grn-l);color:var(--grn);border:none;border-radius:var(--r2);padding:12px 8px;font-size:13px;font-weight:700;cursor:pointer">
+    ⬇️ Backup exportieren
+  </button>
+  <label style="flex:1;background:var(--blu-l);color:var(--blu);border-radius:var(--r2);padding:12px 8px;font-size:13px;font-weight:700;cursor:pointer;text-align:center;display:block">
+    ⬆️ Backup laden
+    <input type="file" accept=".json" style="display:none" onchange="importBackup(this)">
+  </label>
+</div>
+<div class="pb-safe"></div>`;
+}
+
+function renderDay(){
+  const d=DAYS[dayId];
+  const tabs=['route','hotel','highlights','ausgaben','dokumente'];
+  const tabLabels=['🗺 Route','🏨 Hotel','⭐ Highlights','💰 Ausgaben','📄 Docs'];
+  return`<div class="nav"><div class="nav-in">
+    <button class="nav-back" onclick="goHome()">‹ Übersicht</button>
+    <span class="nav-title">${d.tag}</span>
+    <div style="display:flex;gap:2px;min-width:56px;justify-content:flex-end">
+      <button class="nav-arr${dayId===0?' nav-arr-dis':''}" onclick="if(${dayId}>0){dayId=${dayId}-1;render()}" ${dayId===0?'disabled':''}>‹</button>
+      <button class="nav-arr${dayId===DAYS.length-1?' nav-arr-dis':''}" onclick="if(${dayId}<DAYS.length-1){dayId=${dayId}+1;render()}" ${dayId===DAYS.length-1?'disabled':''}>›</button>
+    </div>
+  </div></div>
+  <div class="day-hero">
+    <div class="hero-tag">${d.date} · ${d.tag}</div>
+    <div class="hero-title">${d.title}</div>
+    ${d.from!==d.to?`<div class="hero-route">📍 ${d.from} → ${d.to}${d.miles?' · ca. '+d.miles+' Meilen':''}</div>`:`<div class="hero-route">📍 ${d.from}</div>`}
+  </div>
+  <div class="tab-bar">${tabs.map((t,i)=>`<button class="tab-btn${tab===t?' on':''}" onclick="setTab('${t}')">${tabLabels[i]}</button>`).join('')}</div>
+  <div class="content">${tab==='route'?renderRoute(d):tab==='hotel'?renderHotel(d):tab==='highlights'?renderHighlights(d):tab==='dokumente'?renderDocs(d):renderAusgaben(d)}</div>
+  <div class="pb-safe"></div>`;
+}
+
+function renderRoute(d){
+  let out='';
+  out+=`<div class="card"><div class="card-hdr"><span class="card-ttl">Wetter ${d.date}</span></div><div class="card-body"><div class="wx">🌡 ${d.wx.t}</div><div style="font-size:13px;color:var(--t2)">${d.wx.d}</div></div></div>`;
+  if(d.stops.length){
+    out+=`<div class="card"><div class="card-hdr"><span class="card-ttl">Strecke</span></div><div class="card-body"><div class="stop-list">`;
+    d.stops.forEach((s,i)=>{
+      const dot=s.f?'f':s.l?'l':'';
+      out+=`<div class="stop"><div class="stop-dot ${dot}"></div><div><div class="stop-nm">${s.n}</div>${s.m?`<div class="stop-mi">${s.m}</div>`:''}</div></div>`;
+    });
+    out+=`</div></div></div>`;
+  }
+  if(d.miles){
+    const k=d.id;
+    const mv=mileage[k]||{};
+    const fuelCost=(parseFloat(mv.gallons)||0)*(parseFloat(mv.price)||0);
+    out+=`<div class="card"><div class="card-hdr"><span class="card-ttl">🚗 Mietwagen</span><span style="font-size:11px;color:var(--t3)">${d.miles} Meilen geplant</span></div><div class="card-body" style="gap:9px">
+      <div class="mileage-row">
+        <div class="ex-f"><label>Gefahrene Meilen</label><input id="mil-act-${k}" type="number" placeholder="0" value="${mv.actual||''}" oninput="saveMilField(${k},'actual',this.value)"></div>
+        <div class="ex-f"><label>Differenz</label><input type="number" readonly value="${mv.actual?mv.actual-d.miles:''}" style="opacity:.55;color:${mv.actual&&mv.actual>d.miles?'var(--red)':'var(--grn)'}" placeholder="–"></div>
+      </div>
+      <div class="mileage-row">
+        <div class="ex-f"><label>Getankte Gallonen</label><input id="mil-gal-${k}" type="number" step="0.1" placeholder="0.0" value="${mv.gallons||''}" oninput="saveMilField(${k},'gallons',this.value)"></div>
+        <div class="ex-f"><label>Preis / Gallon ($)</label><input id="mil-pri-${k}" type="number" step="0.01" placeholder="3.50" value="${mv.price||''}" oninput="saveMilField(${k},'price',this.value)"></div>
+      </div>
+      ${fuelCost>0?`<div class="fuel-cost"><span class="fuel-cost-lbl">⛽ Tankkosten</span><span class="fuel-cost-val" id="fuel-cost-${k}">$${fuelCost.toFixed(2)}</span></div>`
+        :`<div class="fuel-cost" style="opacity:.45"><span class="fuel-cost-lbl">⛽ Tankkosten</span><span class="fuel-cost-val" id="fuel-cost-${k}">–</span></div>`}
+      <div id="saved-msg" class="saved-msg hide">✓ Gespeichert</div>
+    </div></div>`;
+  }
+  return out;
+}
+
+function renderHotel(d){
+  const h=d.hotel;
+  let out=`<div class="card"><div class="card-hdr"><span class="card-ttl">Unterkunft</span></div><div class="card-body">
+    <div class="ir"><span class="ir-l">Hotel</span><span class="ir-v" style="font-weight:700">${h.nm}</span></div>
+    <div class="ir"><span class="ir-l">Adresse</span><span class="ir-v" style="font-size:13px">${h.addr}</span></div>
+    <div class="ir"><span class="ir-l">Check-in</span><span class="ir-v">${h.ci} Uhr</span></div>
+    <div class="ir"><span class="ir-l">Check-out</span><span class="ir-v">${h.co} Uhr</span></div>
+  </div></div>`;
+  out+=`<div class="card"><div class="card-hdr"><span class="card-ttl">Frühstück</span></div><div class="card-body">
+    <span class="badge ${h.bkf?'ok':'no'}">${h.bkf_i}</span>
+    <div class="tip"><div class="tip-lbl">${h.bkf?'Was gibt es?':'Empfehlung'}</div><div class="tip-txt">${h.bkf_t}</div></div>
+  </div></div>`;
+  return out;
+}
+
+function renderHighlights(d){
+  if(!d.hl.length) return`<div style="text-align:center;padding:40px 20px;color:var(--t3);font-size:14px">Keine Highlights für diesen Tag</div>`;
+  return`<div class="card"><div class="card-body" style="gap:0">${d.hl.map(h=>`<div class="hl"><div class="hl-ico">${h.e}</div><div><div class="hl-nm">${h.n}</div><div class="hl-ds">${h.d}</div></div></div>`).join('')}</div></div>`;
+}
+
+function renderCardEntries(dayKey,cardKey,title,entries){
+  const safe=Array.isArray(entries)?entries:[];
+  const usd=safe.filter(e=>e.cur!=='eur').reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const eur=safe.filter(e=>e.cur==='eur').reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const rows=safe.length
+    ? safe.map((e,i)=>{
+        const cur=e.cur||'usd';
+        return`<div class="entry-row">
+          <input class="entry-desc" type="text" placeholder="Beschreibung" value="${(e.desc||'').replace(/"/g,'&quot;')}" oninput="updateEntry(${dayKey},'${cardKey}',${i},'desc',this.value)">
+          <input class="entry-amt" type="number" step="0.01" placeholder="0.00" value="${e.amt||''}" oninput="updateEntry(${dayKey},'${cardKey}',${i},'amt',this.value)">
+          <button class="cur-btn ${cur}" onclick="toggleCur(${dayKey},'${cardKey}',${i})">${cur==='eur'?'€':'$'}</button>
+          <button class="del-btn" onclick="removeEntry(${dayKey},'${cardKey}',${i})">×</button>
+        </div>`;}).join('')
+    : `<div class="entry-empty">Noch keine Ausgaben</div>`;
+  const sumParts=[];
+  if(usd>0)sumParts.push(`<span style="color:var(--blu)">$${usd.toFixed(2)}</span>`);
+  if(eur>0)sumParts.push(`<span style="color:var(--grn)">€${eur.toFixed(2)}</span>`);
+  const sumRow=safe.length?`<div class="entry-sum" id="sum-${dayKey}-${cardKey}">Gesamt: <strong>${sumParts.length?sumParts.join(' + '):'–'}</strong></div>`:'';
+  return`<div class="card" id="card-${dayKey}-${cardKey}">
+    <div class="card-hdr">
+      <span class="card-ttl">${title}</span>
+      <button class="add-btn" onclick="addEntry(${dayKey},'${cardKey}')">+ Hinzufügen</button>
+    </div>
+    <div class="card-body" style="gap:7px">${rows}${sumRow}</div>
+  </div>`;
+}
+
+function renderAusgaben(d){
+  const k=d.id;
+  const ex=expenses[k]||{};
+  return`
+    ${renderCardEntries(k,'mkk','Marcel – Kreditkarte',ex.mkk)}
+    ${renderCardEntries(k,'mdk','Marcel – Debitkarte',ex.mdk)}
+    ${renderCardEntries(k,'vkk','Vati – Kreditkarte',ex.vkk)}
+    ${renderCardEntries(k,'vdk','Vati – Debitkarte',ex.vdk)}
+    ${renderDayTotal(k)}`;
+}
+
+function renderDayTotal(dayKey){
+  const sumUSD=arr=>(Array.isArray(arr)?arr:[]).filter(e=>e.cur!=='eur').reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const sumEUR=arr=>(Array.isArray(arr)?arr:[]).filter(e=>e.cur==='eur').reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const ex=expenses[dayKey]||{};
+  const cards=[['mkk','Marcel KK'],['mdk','Marcel Debit'],['vkk','Vati KK'],['vdk','Vati Debit']];
+  const rows=cards.map(([k,lbl])=>{
+    const u=sumUSD(ex[k]),r=sumEUR(ex[k]);
+    if(!u&&!r)return'';
+    const parts=[];
+    if(u)parts.push(`<span style="color:var(--blu)">$${u.toFixed(2)}</span>`);
+    if(r)parts.push(`<span style="color:var(--grn)">€${r.toFixed(2)}</span>`);
+    return`<div class="ir"><span class="ir-l">${lbl}</span><span class="ir-v" style="font-size:13px">${parts.join(' + ')}</span></div>`;
+  }).filter(Boolean).join('');
+  const totUSD=cards.reduce((s,[k])=>s+sumUSD(ex[k]),0);
+  const totEUR=cards.reduce((s,[k])=>s+sumEUR(ex[k]),0);
+  if(!totUSD&&!totEUR)return`<div style="text-align:center;padding:20px;font-size:13px;color:var(--t3)">Tagesübersicht erscheint nach Eingabe von Ausgaben</div>`;
+  const totParts=[];
+  if(totUSD)totParts.push(`<span style="color:var(--blu)">$${totUSD.toFixed(2)}</span>`);
+  if(totEUR)totParts.push(`<span style="color:var(--grn)">€${totEUR.toFixed(2)}</span>`);
+  return`<div class="card"><div class="card-hdr"><span class="card-ttl">Tagesübersicht</span></div><div class="card-body">
+    ${rows}
+    <div style="border-top:.5px solid var(--bdr);padding-top:8px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-weight:700">Tag gesamt</span><span style="font-weight:700;font-size:14px">${totParts.join(' + ')}</span>
+    </div>
+  </div></div>`;
+}
+
+function renderTripTotal(){
+  const sumUSD=arr=>(Array.isArray(arr)?arr:[]).filter(e=>e.cur!=='eur').reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const sumEUR=arr=>(Array.isArray(arr)?arr:[]).filter(e=>e.cur==='eur').reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const cards=[['mkk','Marcel KK'],['mdk','Marcel Debit'],['vkk','Vati KK'],['vdk','Vati Debit']];
+  let totals={};cards.forEach(([k])=>totals[k]={usd:0,eur:0});
+  const dayRows=DAYS.map(d=>{
+    const ex=expenses[d.id]||{};
+    let dUSD=0,dEUR=0;
+    cards.forEach(([k])=>{totals[k].usd+=sumUSD(ex[k]);totals[k].eur+=sumEUR(ex[k]);dUSD+=sumUSD(ex[k]);dEUR+=sumEUR(ex[k]);});
+    if(!dUSD&&!dEUR)return'';
+    const p=[];
+    if(dUSD)p.push(`<span style="color:var(--blu)">$${dUSD.toFixed(2)}</span>`);
+    if(dEUR)p.push(`<span style="color:var(--grn)">€${dEUR.toFixed(2)}</span>`);
+    return`<div class="ir" style="cursor:pointer" onclick="goDay(${d.id})">
+      <span class="ir-l" style="font-size:11px">${d.date} ${d.tag}</span>
+      <span class="ir-v" style="font-size:13px">${p.join(' + ')}</span>
+    </div>`;
+  }).filter(Boolean).join('');
+  const cardRows=cards.map(([k,lbl])=>{
+    const u=totals[k].usd,r=totals[k].eur;
+    if(!u&&!r)return'';
+    const p=[];
+    if(u)p.push(`<span style="color:var(--blu)">$${u.toFixed(2)}</span>`);
+    if(r)p.push(`<span style="color:var(--grn)">€${r.toFixed(2)}</span>`);
+    return`<div class="ir"><span class="ir-l">${lbl}</span><span class="ir-v" style="font-size:13px">${p.join(' + ')}</span></div>`;
+  }).filter(Boolean).join('');
+  const grandUSD=cards.reduce((s,[k])=>s+totals[k].usd,0);
+  const grandEUR=cards.reduce((s,[k])=>s+totals[k].eur,0);
+
+  // Gesamtbetrag in Euro
+  const grandEURtotal=grandEUR+(usdToEur?grandUSD*usdToEur:0);
+  const rateInfo=usdToEur
+    ? `Kurs: 1 $ = ${usdToEur.toFixed(4)} €`
+    : 'Kurs nicht verfügbar';
+  const rateStored=localStorage.getItem('rb26_rate');
+  let rateDate='';
+  try{const p=JSON.parse(rateStored||'{}');if(p.ts)rateDate=', Stand: '+new Date(p.ts).toLocaleDateString('de-DE');}catch(e){}
+
+  // Beträge links, EUR-Gesamt rechts
+  const leftParts=[];
+  if(grandUSD)leftParts.push(`<span style="color:var(--blu)">$${grandUSD.toFixed(2)}</span>`);
+  if(grandEUR)leftParts.push(`<span style="color:var(--grn)">€${grandEUR.toFixed(2)}</span>`);
+
+  const totalRow=`<div style="border-top:.5px solid var(--bdr);padding-top:10px;margin-top:2px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="font-weight:700;font-size:14px">${leftParts.join(' + ')||'–'}</div>
+      <div style="text-align:right">
+        <div style="font-weight:700;color:var(--acc);font-size:20px">€${grandEURtotal.toFixed(2)}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:1px">${rateInfo}${rateDate}</div>
+      </div>
+    </div>
+    ${!usdToEur?`<div style="font-size:11px;color:var(--red);margin-top:6px">⚠️ Kein Wechselkurs verfügbar – bitte einmal mit Internet öffnen</div>`:''}
+  </div>`;
+  return`<div class="nav"><div class="nav-in">
+    <button class="nav-back" onclick="page='home';render()">‹ Übersicht</button>
+    <span class="nav-title">Gesamtübersicht</span>
+    <span class="nav-spc"></span>
+  </div></div>
+  <div class="day-hero"><div class="hero-tag">Alle 20 Tage</div><div class="hero-title">Ausgaben Übersicht</div></div>
+  <div class="content">
+    <div class="card"><div class="card-hdr"><span class="card-ttl">Summe nach Karte</span></div><div class="card-body">
+      ${cardRows||'<div class="entry-empty">Noch keine Ausgaben eingetragen</div>'}
+      ${(grandUSD||grandEUR)?totalRow:''}
+    </div></div>
+    ${dayRows?`<div class="card"><div class="card-hdr"><span class="card-ttl">Ausgaben pro Tag</span></div><div class="card-body" style="gap:6px">${dayRows}</div></div>`:''}
+  </div><div class="pb-safe"></div>`;
+}
+
+function goHome(){page='home';render();}
+function goDay(id){dayId=id;tab='route';page='day';render();}
+function setTab(t){tab=t;render();}
+
+function toggleCur(dayKey,cardKey,idx){
+  if(!expenses[dayKey]||!expenses[dayKey][cardKey])return;
+  const e=expenses[dayKey][cardKey][idx];
+  e.cur=e.cur==='eur'?'usd':'eur';
+  saveExp();
+  // Re-render just the card to reflect toggle
+  const entries=expenses[dayKey][cardKey];
+  const cardEl=document.getElementById(`card-${dayKey}-${cardKey}`);
+  if(cardEl){cardEl.outerHTML=renderCardEntries(dayKey,cardKey,cardEl.querySelector('.card-ttl').textContent,entries);}
+  else render();
+}
+
+function renderCarOverview(){
+  // Mietvertrag-Kosten
+  const items=Array.isArray(rentalCosts.items)?rentalCosts.items:[];
+  const contractTotal=items.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const contractRows=items.length
+    ? items.map((e,i)=>`<div class="entry-row" style="grid-template-columns:1fr 90px 30px">
+        <input class="entry-desc" type="text" placeholder="Beschreibung" value="${(e.desc||'').replace(/"/g,'&quot;')}" oninput="updateCarItem(${i},'desc',this.value)">
+        <input class="entry-amt" type="number" step="0.01" placeholder="0.00" value="${e.amt||''}" oninput="updateCarItem(${i},'amt',this.value)">
+        <button class="del-btn" onclick="removeCarItem(${i})">×</button>
+      </div>`).join('')
+    : `<div class="entry-empty">Noch keine Kosten eingetragen</div>`;
+
+  // Streckendaten
+  const totalEstMiles=DAYS.reduce((s,d)=>s+d.miles,0);
+  const driveDays=DAYS.filter(d=>d.miles>0);
+  const totalActMiles=driveDays.reduce((s,d)=>s+(parseFloat((mileage[d.id]||{}).actual)||0),0);
+  const totalFuelCost=driveDays.reduce((s,d)=>{
+    const mv=mileage[d.id]||{};
+    return s+(parseFloat(mv.gallons)||0)*(parseFloat(mv.price)||0);
+  },0);
+  const totalGallons=driveDays.reduce((s,d)=>s+(parseFloat((mileage[d.id]||{}).gallons)||0),0);
+  const avgMpg=totalGallons>0&&totalActMiles>0?(totalActMiles/totalGallons):0;
+  const pct=totalEstMiles>0?Math.min(100,Math.round(totalActMiles/totalEstMiles*100)):0;
+  const grandTotal=contractTotal+totalFuelCost;
+
+  // Tagesübersicht
+  const dayRows=driveDays.map(d=>{
+    const mv=mileage[d.id]||{};
+    const fc=(parseFloat(mv.gallons)||0)*(parseFloat(mv.price)||0);
+    const act=parseFloat(mv.actual)||0;
+    return`<div class="ir" style="cursor:pointer;gap:6px" onclick="goDay(${d.id})">
+      <span class="ir-l" style="font-size:11px">${d.date} ${d.tag}</span>
+      <span style="flex:1;font-size:12px;color:var(--t2)">${act?act+' mi':'–'} / ${d.miles} mi</span>
+      <span style="font-size:13px;font-weight:600;color:var(--blu)">${fc?'$'+fc.toFixed(2):'–'}</span>
+    </div>`;
+  }).join('');
+
+  return`<div class="nav"><div class="nav-in">
+    <button class="nav-back" onclick="page='home';render()">‹ Übersicht</button>
+    <span class="nav-title">Mietwagen</span>
+    <span class="nav-spc"></span>
+  </div></div>
+  <div class="day-hero"><div class="hero-tag">Alamo · Premium SUV</div><div class="hero-title">Mietwagen Übersicht</div>
+    <div class="hero-route">📍 SeaTac · 05.06. – 24.06.2026</div></div>
+  <div class="content">
+
+    <div class="card"><div class="card-hdr"><span class="card-ttl">Mietvertrag & Fixkosten</span>
+      <button class="add-btn" onclick="addCarItem()">+ Hinzufügen</button>
+    </div><div class="card-body" style="gap:7px">
+      ${contractRows}
+      ${items.length?`<div class="entry-sum">Gesamt: <strong>$${contractTotal.toFixed(2)}</strong></div>`:''}
+    </div></div>
+
+    <div class="card"><div class="card-hdr"><span class="card-ttl">Gesamtstrecke & Verbrauch</span></div><div class="card-body">
+      <div class="car-stat-grid">
+        <div class="car-stat"><span class="car-stat-n">${totalActMiles?totalActMiles.toLocaleString('de-DE'):'-'}</span><span class="car-stat-l">Gefahrene Meilen</span></div>
+        <div class="car-stat"><span class="car-stat-n">${totalEstMiles.toLocaleString('de-DE')}</span><span class="car-stat-l">Geplante Meilen</span></div>
+        <div class="car-stat"><span class="car-stat-n">${totalGallons?totalGallons.toFixed(1)+' gal':'-'}</span><span class="car-stat-l">Getankt gesamt</span></div>
+        <div class="car-stat"><span class="car-stat-n">${avgMpg?avgMpg.toFixed(1)+' mpg':'-'}</span><span class="car-stat-l">Ø Verbrauch</span></div>
+      </div>
+      ${totalActMiles?`<div style="margin-top:4px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--t3);margin-bottom:4px"><span>Fortschritt</span><span>${pct}%</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </div>`:''}
+    </div></div>
+
+    <div class="card"><div class="card-hdr"><span class="card-ttl">Kosten Zusammenfassung</span></div><div class="card-body">
+      ${contractTotal?`<div class="ir"><span class="ir-l">Mietvertrag</span><span class="ir-v">$${contractTotal.toFixed(2)}</span></div>`:''}
+      ${totalFuelCost?`<div class="ir"><span class="ir-l">⛽ Sprit gesamt</span><span class="ir-v" style="color:var(--blu)">$${totalFuelCost.toFixed(2)}</span></div>`:''}
+      ${grandTotal?`<div style="border-top:.5px solid var(--bdr);padding-top:8px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:700">Gesamt</span>
+        <span style="font-weight:700;color:var(--acc);font-size:18px">$${grandTotal.toFixed(2)}</span>
+      </div>`:(!contractTotal&&!totalFuelCost?`<div class="entry-empty">Noch keine Daten eingetragen</div>`:'')}
+    </div></div>
+
+    <div class="card"><div class="card-hdr"><span class="card-ttl">Fahrtenbuch</span></div><div class="card-body" style="gap:6px">
+      ${dayRows}
+    </div></div>
+
+  </div><div class="pb-safe"></div>`;
+}
+
+function addCarItem(){
+  if(!rentalCosts.items)rentalCosts.items=[];
+  rentalCosts.items.push({desc:'',amt:''});
+  saveCar();render();
+}
+function removeCarItem(idx){
+  rentalCosts.items.splice(idx,1);
+  saveCar();render();
+}
+function updateCarItem(idx,field,val){
+  if(!rentalCosts.items[idx])rentalCosts.items[idx]={};
+  rentalCosts.items[idx][field]=val;
+  saveCar();
+  const total=rentalCosts.items.reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const el=document.querySelector('.entry-sum');
+  if(el)el.innerHTML=`Gesamt: <strong>$${total.toFixed(2)}</strong>`;
+}
+function addEntry(dayKey,cardKey){
+  if(!expenses[dayKey])expenses[dayKey]={};
+  if(!expenses[dayKey][cardKey])expenses[dayKey][cardKey]=[];
+  expenses[dayKey][cardKey].push({desc:'',amt:'',cur:'usd'});
+  saveExp();
+  render();
+}
+
+function removeEntry(dayKey,cardKey,idx){
+  if(!expenses[dayKey]||!expenses[dayKey][cardKey])return;
+  expenses[dayKey][cardKey].splice(idx,1);
+  saveExp();
+  render();
+}
+
+function updateEntry(dayKey,cardKey,idx,field,val){
+  if(!expenses[dayKey])expenses[dayKey]={};
+  if(!expenses[dayKey][cardKey])expenses[dayKey][cardKey]=[];
+  if(!expenses[dayKey][cardKey][idx])expenses[dayKey][cardKey][idx]={cur:'usd'};
+  expenses[dayKey][cardKey][idx][field]=val;
+  saveExp();
+  const entries=expenses[dayKey][cardKey];
+  const usd=entries.filter(e=>e.cur!=='eur').reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const eur=entries.filter(e=>e.cur==='eur').reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const parts=[];
+  if(usd>0)parts.push(`<span style="color:var(--blu)">$${usd.toFixed(2)}</span>`);
+  if(eur>0)parts.push(`<span style="color:var(--grn)">€${eur.toFixed(2)}</span>`);
+  const sumEl=document.getElementById(`sum-${dayKey}-${cardKey}`);
+  if(sumEl)sumEl.innerHTML=`Gesamt: <strong>${parts.length?parts.join(' + '):'–'}</strong>`;
+}
+
+function saveMilField(id,field,val){
+  if(!mileage[id])mileage[id]={};
+  mileage[id][field]=val;
+  saveMil();
+  // Live-Update Tankkosten
+  const mv=mileage[id];
+  const cost=(parseFloat(mv.gallons)||0)*(parseFloat(mv.price)||0);
+  const el=document.getElementById(`fuel-cost-${id}`);
+  if(el){
+    el.textContent=cost>0?`$${cost.toFixed(2)}`:'–';
+    el.closest('.fuel-cost').style.opacity=cost>0?'1':'0.45';
+  }
+  // Live-Update Differenz
+  const diffEl=document.querySelector(`#mil-act-${id}`)?.closest('.mileage-row')?.nextElementSibling?.querySelector('input[readonly]');
+  if(diffEl&&mv.actual){
+    const day=DAYS.find(d=>d.id===id);
+    diffEl.value=mv.actual-(day?day.miles:0);
+  }
+}
+
+loadData();
+loadWxCache();
+fetchExchangeRate();
+initDB().catch(()=>console.warn('IndexedDB nicht verfügbar'));
+
+// Offline-Banner
+function updateOfflineBanner(){
+  const b=document.getElementById('offline-banner');
+  if(b)b.style.display=navigator.onLine?'none':'block';
+}
+window.addEventListener('online',updateOfflineBanner);
+window.addEventListener('offline',updateOfflineBanner);
+updateOfflineBanner();
+
+// Service Worker registrieren
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(()=>console.log('Service Worker aktiv'))
+      .catch(e=>console.warn('SW Fehler:',e));
+  });
+}
+
+render();
+</script>
+</body>
+</html>
