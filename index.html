@@ -191,7 +191,7 @@ input{font-family:inherit}
 <div id="app"></div>
 <script>
 const DAYS=[
-{id:0,date:"05.06.26",tag:"Tag 1 · Flug",type:"fly",title:"Anreisetag – Flug",from:"Berlin",to:"Seattle SeaTac",miles:0,
+{id:0,date:"05.06.26",tag:"Tag 0 · Flug",type:"fly",title:"Anreisetag – Flug",from:"Berlin",to:"Seattle SeaTac",miles:0,
  stops:[{n:"Berlin BER – Check-in ab 04:15 Uhr",f:1},{n:"Frankfurt FRA (LH 205, ab 07:15 Uhr)",m:""},{n:"Seattle SeaTac (LH 490, Ank. 11:55 Uhr)",m:"",l:1}],
  hotel:{nm:"W Seattle",addr:"1112 4th Ave, Seattle, WA 98101",ci:"16:00",co:"12:00",bkf:false,bkf_i:"❌ Nicht inklusive",bkf_t:"Lola Restaurant (2000 4th Ave) – Pancakes, French Toast, Bacon – 10 Min. Fußweg"},
  hl:[{e:"✈️",n:"LH 205 – Berlin → Frankfurt",d:"Abflug 07:15 Uhr · Ankunft Frankfurt ca. 08:20 Uhr · Terminal 1"},{e:"✈️",n:"LH 490 – Frankfurt → Seattle",d:"Abflug Frankfurt ca. 10:25 Uhr · Ankunft Seattle SeaTac 11:55 Uhr (Ortszeit) · ca. 10h Flug"},{e:"🛂",n:"US-Einreise SeaTac",d:"ESTA vorab prüfen! Fingerabdrücke & Foto beim Officer – ca. 30–60 Min. einplanen"}],
@@ -740,7 +740,7 @@ function renderHome(){
   <div class="hdr-title">Pacific Northwest</div>
   <div class="hdr-dates">05. Juni – 25. Juni 2026</div>
   <div class="hdr-stats">
-    <div class="stat"><span class="stat-n">${DAYS.length}</span><span class="stat-l">Tage</span></div>
+    <div class="stat"><span class="stat-n">${new Set(DAYS.map(d=>d.date)).size}</span><span class="stat-l">Tage</span></div>
     <div class="stat"><span class="stat-n">${DAYS.reduce((s,d)=>s+d.miles,0).toLocaleString('de-DE')}</span><span class="stat-l">Meilen</span></div>
     <div class="stat"><span class="stat-n">${completed}</span><span class="stat-l">Erledigt</span></div>
   </div>
@@ -815,7 +815,7 @@ function renderDay(){
     <span class="nav-title">${d.tag}</span>
     <div style="display:flex;gap:2px;min-width:56px;justify-content:flex-end">
       <button class="nav-arr${dayId===0?' nav-arr-dis':''}" onclick="if(${dayId}>0){dayId=${dayId}-1;render()}" ${dayId===0?'disabled':''}>‹</button>
-      <button class="nav-arr${dayId===DAYS.length-1?' nav-arr-dis':''}" onclick="if(${dayId}<DAYS.length-1){dayId=${dayId}+1;render()}" ${dayId===DAYS.length-1?'disabled':''}>›</button>
+      <button class="nav-arr${dayId===DAYS.length-1?' nav-arr-dis':''}" onclick="if(${dayId}<${DAYS.length-1}){dayId=${dayId}+1;render()}" ${dayId===DAYS.length-1?'disabled':''}>›</button>
     </div>
   </div></div>
   <div class="day-hero">
@@ -1064,7 +1064,7 @@ function renderTripTotal(){
 }
 
 function goHome(){page='home';render();}
-function goDay(id){dayId=id;tab='route';page='day';render();}
+function goDay(id){dayId=DAYS.findIndex(d=>d.id===id);if(dayId<0)dayId=0;tab='route';page='day';render();}
 function setTab(t){tab=t;render();}
 
 function toggleCur(dayKey,cardKey,idx){
