@@ -191,10 +191,16 @@ input{font-family:inherit}
 <div id="app"></div>
 <script>
 const DAYS=[
-{id:0,date:"05.06.26",tag:"Tag 1",type:"fly",title:"Anreisetag",from:"Berlin",to:"Seattle",miles:19,
- stops:[{n:"Berlin Tegel / BER",f:1},{n:"Frankfurt (LH 205, 07:15 Uhr)",m:""},{n:"Seattle SeaTac (LH 490, Ank. 11:55)",m:""},{n:"Walmart Renton",m:"ca. 5 Meilen"},{n:"W Hotel Seattle",m:"ca. 14 Meilen",l:1}],
+{id:0,date:"05.06.26",tag:"Tag 1 · Flug",type:"fly",title:"Anreisetag – Flug",from:"Berlin",to:"Seattle SeaTac",miles:0,
+ stops:[{n:"Berlin BER – Check-in ab 04:15 Uhr",f:1},{n:"Frankfurt FRA (LH 205, ab 07:15 Uhr)",m:""},{n:"Seattle SeaTac (LH 490, Ank. 11:55 Uhr)",m:"",l:1}],
  hotel:{nm:"W Seattle",addr:"1112 4th Ave, Seattle, WA 98101",ci:"16:00",co:"12:00",bkf:false,bkf_i:"❌ Nicht inklusive",bkf_t:"Lola Restaurant (2000 4th Ave) – Pancakes, French Toast, Bacon – 10 Min. Fußweg"},
- hl:[{e:"🛬",n:"Mietwagen Alamo",d:"Premium SUV 7-Sitzer – 3150 S 160th St, SeaTac. Tank-Option prüfen!"},{e:"🛒",n:"Walmart Renton",d:"743 Rainier Ave S – Erstversorgung: Wasser, Snacks, Sonnencreme, Toilettenartikel"},{e:"🏨",n:"W Seattle Check-In",d:"Ab 16:00 Uhr – Gepäck ggf. früher abgeben"}],
+ hl:[{e:"✈️",n:"LH 205 – Berlin → Frankfurt",d:"Abflug 07:15 Uhr · Ankunft Frankfurt ca. 08:20 Uhr · Terminal 1"},{e:"✈️",n:"LH 490 – Frankfurt → Seattle",d:"Abflug Frankfurt ca. 10:25 Uhr · Ankunft Seattle SeaTac 11:55 Uhr (Ortszeit) · ca. 10h Flug"},{e:"🛂",n:"US-Einreise SeaTac",d:"ESTA vorab prüfen! Fingerabdrücke & Foto beim Officer – ca. 30–60 Min. einplanen"}],
+ wx:{t:"14–18°C",d:"Meist bewölkt, trocken"}},
+
+{id:20,date:"05.06.26",tag:"Tag 1 · Ankunft",type:"drive",title:"Anreisetag – Seattle",from:"Seattle SeaTac",to:"Seattle",miles:19,
+ stops:[{n:"Seattle SeaTac – Alamo Mietwagen",f:1},{n:"Walmart Renton",m:"ca. 5 Meilen"},{n:"W Hotel Seattle",m:"ca. 14 Meilen",l:1}],
+ hotel:{nm:"W Seattle",addr:"1112 4th Ave, Seattle, WA 98101",ci:"16:00",co:"12:00",bkf:false,bkf_i:"❌ Nicht inklusive",bkf_t:"Lola Restaurant (2000 4th Ave) – Pancakes, French Toast, Bacon – 10 Min. Fußweg"},
+ hl:[{e:"🚗",n:"Mietwagen Alamo",d:"Premium SUV 7-Sitzer – 3150 S 160th St, SeaTac. Tank-Option prüfen! Counter im Parkhaus Level 4"},{e:"🛒",n:"Walmart Renton",d:"743 Rainier Ave S – Erstversorgung: Wasser, Snacks, Sonnencreme, Toilettenartikel"},{e:"🏨",n:"W Seattle Check-In",d:"Ab 16:00 Uhr – Gepäck ggf. früher abgeben. Valet Parking verfügbar"}],
  wx:{t:"14–18°C",d:"Meist bewölkt, trocken"}},
 
 {id:1,date:"06.06.26",tag:"Tag 2",type:"rest",title:"Seattle",from:"Seattle",to:"Seattle",miles:0,
@@ -469,7 +475,7 @@ async function fetchExchangeRate(){
 
 // Koordinaten pro Tag (Zielort)
 const DAY_COORDS={
-  0:[47.606,-122.332],1:[47.606,-122.332],2:[48.118,-123.431],3:[48.118,-123.431],
+  0:[47.606,-122.332],20:[47.606,-122.332],1:[47.606,-122.332],2:[48.118,-123.431],3:[48.118,-123.431],
   4:[47.609,-124.375],5:[45.523,-122.677],6:[45.523,-122.677],7:[44.058,-121.315],
   8:[43.586,-119.054],9:[43.615,-116.202],10:[42.556,-114.461],11:[44.382,-110.548],
   12:[44.382,-110.548],13:[46.872,-113.994],14:[48.451,-113.218],15:[48.451,-113.218],
@@ -734,7 +740,7 @@ function renderHome(){
   <div class="hdr-title">Pacific Northwest</div>
   <div class="hdr-dates">05. Juni – 25. Juni 2026</div>
   <div class="hdr-stats">
-    <div class="stat"><span class="stat-n">20</span><span class="stat-l">Tage</span></div>
+    <div class="stat"><span class="stat-n">${DAYS.length}</span><span class="stat-l">Tage</span></div>
     <div class="stat"><span class="stat-n">${DAYS.reduce((s,d)=>s+d.miles,0).toLocaleString('de-DE')}</span><span class="stat-l">Meilen</span></div>
     <div class="stat"><span class="stat-n">${completed}</span><span class="stat-l">Erledigt</span></div>
   </div>
@@ -743,8 +749,10 @@ function renderHome(){
 <div class="day-list">${DAYS.map(d=>{
   const tclass=d.type==='fly'?'t-fly':d.type==='rest'?'t-rest':'';
   const done=mileage[d.id]&&mileage[d.id].actual?'✓':'';
+  const badgeNum=d.id===0?'0':d.id===20?'1':d.id+1;
+  const badgeLbl=d.type==='fly'?'Flug':d.type==='rest'?'Rest':'Tag';
   return`<div class="day-card" onclick="goDay(${d.id})">
-    <div class="dc-badge ${tclass}"><span class="dc-n">${done||d.id+1}</span><span class="dc-l">${d.type==='fly'?'Flug':d.type==='rest'?'Rest':'Tag'}</span></div>
+    <div class="dc-badge ${tclass}"><span class="dc-n">${done||badgeNum}</span><span class="dc-l">${badgeLbl}</span></div>
     <div class="dc-info">
       <div class="dc-date">${d.date}</div>
       <div class="dc-title">${d.title}</div>
@@ -795,8 +803,13 @@ function renderHome(){
 
 function renderDay(){
   const d=DAYS[dayId];
-  const tabs=['route','hotel','highlights','ausgaben','dokumente'];
-  const tabLabels=['🗺 Route','🏨 Hotel','⭐ Highlights','💰 Ausgaben','📄 Docs'];
+  const isFlugTag=d.id===0;
+  const tabs=isFlugTag
+    ?['route','flug','highlights','ausgaben','dokumente']
+    :['route','hotel','highlights','ausgaben','dokumente'];
+  const tabLabels=isFlugTag
+    ?['🗺 Route','✈️ Flug','⭐ Highlights','💰 Ausgaben','📄 Docs']
+    :['🗺 Route','🏨 Hotel','⭐ Highlights','💰 Ausgaben','📄 Docs'];
   return`<div class="nav"><div class="nav-in">
     <button class="nav-back" onclick="goHome()">‹ Übersicht</button>
     <span class="nav-title">${d.tag}</span>
@@ -811,8 +824,58 @@ function renderDay(){
     ${d.from!==d.to?`<div class="hero-route">📍 ${d.from} → ${d.to}${d.miles?' · ca. '+d.miles+' Meilen':''}</div>`:`<div class="hero-route">📍 ${d.from}</div>`}
   </div>
   <div class="tab-bar">${tabs.map((t,i)=>`<button class="tab-btn${tab===t?' on':''}" onclick="setTab('${t}')">${tabLabels[i]}</button>`).join('')}</div>
-  <div class="content">${tab==='route'?renderRoute(d):tab==='hotel'?renderHotel(d):tab==='highlights'?renderHighlights(d):tab==='dokumente'?renderDocs(d):renderAusgaben(d)}</div>
+  <div class="content">${tab==='route'?renderRoute(d):tab==='flug'?renderFlug():tab==='hotel'?renderHotel(d):tab==='highlights'?renderHighlights(d):tab==='dokumente'?renderDocs(d):renderAusgaben(d)}</div>
   <div class="pb-safe"></div>`;
+}
+
+function renderFlug(){
+  const infoRow=(lbl,val,sub)=>`<div class="ir" style="align-items:flex-start">
+    <span class="ir-l">${lbl}</span>
+    <div><span class="ir-v">${val}</span>${sub?`<div style="font-size:12px;color:var(--t2);margin-top:1px">${sub}</div>`:''}</div>
+  </div>`;
+  const divider=`<div style="height:.5px;background:var(--bdr);margin:4px 0"></div>`;
+
+  return`
+  <div class="card"><div class="card-hdr"><span class="card-ttl">✈️ LH 205 · Zubringer</span><span style="font-size:11px;color:var(--t3)">Kurzstrecke</span></div><div class="card-body">
+    ${infoRow('Strecke','Berlin BER → Frankfurt FRA')}
+    ${divider}
+    ${infoRow('Abflug','07:15 Uhr (MESZ)','Terminal 1 · BER · Check-in ab 05:00 Uhr')}
+    ${infoRow('Ankunft','08:25 Uhr (MESZ)','Terminal 1 · FRA')}
+    ${infoRow('Flugzeit','ca. 1 Std. 10 Min.','')}
+    ${infoRow('Flugzeug','Airbus A320','')}
+    ${divider}
+    <div class="tip"><div class="tip-lbl">⚠️ Umstieg Frankfurt</div><div class="tip-txt">Umsteigezeit ca. 1:55 Std. · Terminal 1 bleibt gleich · Gate Z-Bereich für LH 490 · Sicherheitskontrolle Schengen → Non-Schengen einplanen!</div></div>
+  </div></div>
+
+  <div class="card"><div class="card-hdr"><span class="card-ttl">✈️ LH 490 · Langstrecke</span><span style="font-size:11px;color:var(--t3)">Transatlantik</span></div><div class="card-body">
+    ${infoRow('Strecke','Frankfurt FRA → Seattle SEA')}
+    ${divider}
+    ${infoRow('Abflug','10:20 Uhr (MESZ)','Terminal 1 · Gate Z · FRA')}
+    ${infoRow('Ankunft','11:55 Uhr (PDT)','Terminal N · Gate S · Seattle-Tacoma')}
+    ${infoRow('Flugzeit','ca. 10 Std. 35 Min.','')}
+    ${infoRow('Strecke','8.191 km · Nordatlantik-Route','')}
+    ${infoRow('Flugzeug','Airbus A340-300','4-strahlig · Economy & Business')}
+    ${divider}
+    <div class="tip"><div class="tip-lbl">🇺🇸 US-Einreise SeaTac</div><div class="tip-txt">ESTA vorab prüfen! Fingerabdrücke & Foto bei Einreise · CBP-Beamte · ca. 30–60 Min. einplanen · Dann direkt zu Alamo Counter (Parkhaus Level 4)</div></div>
+  </div></div>
+
+  <div class="card"><div class="card-hdr"><span class="card-ttl">📋 Zeitplan Reisetag</span></div><div class="card-body" style="gap:0">
+    ${[
+      ['04:00','Aufstehen & Abfahrt zum BER'],
+      ['05:00','Check-in öffnet BER Terminal 1'],
+      ['06:15','Sicherheitskontrolle & Gate'],
+      ['07:15','Abflug LH 205 Berlin → Frankfurt'],
+      ['08:25','Ankunft Frankfurt T1 · Umstieg'],
+      ['10:20','Abflug LH 490 Frankfurt → Seattle'],
+      ['11:55','Ankunft Seattle SeaTac (Ortszeit PDT)'],
+      ['12:30','US-Einreise & Gepäckausgabe'],
+      ['13:30','Alamo Mietwagen abholen'],
+      ['16:00','Check-in W Hotel Seattle'],
+    ].map(([t,txt],i,arr)=>`<div style="display:flex;gap:12px;padding:8px 0;${i<arr.length-1?'border-bottom:.5px solid var(--bdr)':''}">
+      <span style="font-size:12px;font-weight:700;color:var(--acc);min-width:42px;flex-shrink:0">${t}</span>
+      <span style="font-size:13px;color:var(--t1)">${txt}</span>
+    </div>`).join('')}
+  </div></div>`;
 }
 
 function renderRoute(d){
@@ -1180,8 +1243,8 @@ window.addEventListener('online',updateOfflineBanner);
 window.addEventListener('offline',updateOfflineBanner);
 updateOfflineBanner();
 
-// Service Worker registrieren
-if('serviceWorker' in navigator){
+// Service Worker nur außerhalb der Claude-Vorschau registrieren
+if('serviceWorker' in navigator && !location.hostname.includes('claudeusercontent.com')){
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('./service-worker.js')
       .then(()=>console.log('Service Worker aktiv'))
