@@ -329,7 +329,105 @@ let page='home', dayId=0, tab='route';
 let expenses={}, mileage={}, rentalCosts={items:[]};
 let usdToEur=null; // current exchange rate
 
-// ── IndexedDB für PDF-Dokumente ──────────────────────────────
+// ── Parkplatz-Notizen ────────────────────────────────────────
+let parkingNotes={};
+function loadParkingNotes(){try{parkingNotes=JSON.parse(localStorage.getItem('rb26_park')||'{}');}catch(e){parkingNotes={};}}
+function saveParkNote(dayId,val){parkingNotes[dayId]=val;localStorage.setItem('rb26_park',JSON.stringify(parkingNotes));}
+
+// ── Fotos in IndexedDB ───────────────────────────────────────
+function dbSavePhoto(dayId,name,dataUrl){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction('docs','readwrite');
+    tx.objectStore('docs').add({dayId:'photo_'+dayId,name,size:dataUrl.length,dataUrl,ts:Date.now(),isPhoto:true});
+    tx.oncomplete=()=>res();tx.onerror=()=>rej();
+  });
+}
+function dbGetPhotos(dayId){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction('docs','readonly');
+    const req=tx.objectStore('docs').index('dayId').getAll('photo_'+dayId);
+    req.onsuccess=()=>res(req.result);req.onerror=()=>rej();
+  });
+}
+
+function renderFotos(d){
+  setTimeout(()=>loadPhotosForDay(d.id),30);
+  return`<div class="card"><div class="card-hdr"><span class="card-ttl">📸 Tagesfotos</span></div>
+    <div class="card-body" id="photos-wrap-${d.id}">
+      <div style="text-align:center;padding:20px;color:var(--t3);font-size:13px">⏳ Wird geladen…</div>
+    </div></div>`;
+}
+
+async function loadPhotosForDay(dayId){
+  const wrap=document.getElementById(`photos-wrap-${dayId}`);
+  if(!wrap)return;
+  try{
+    const photos=await dbGetPhotos(dayId);
+    wrap.innerHTML=renderPhotosList(dayId,photos);
+  }catch(e){wrap.innerHTML=`<div style="color:var(--red);font-size:13px;padding:12px">Fehler beim Laden.</div>`;}
+}
+
+function renderPhotosList(dayId,photos){
+  const grid=photos.length?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+    ${photos.map(p=>`<div style="position:relative;border-radius:var(--r2);overflow:hidden;aspect-ratio:1;background:var(--s2)">
+      <img src="${p.dataUrl}" style="width:100%;height:100%;object-fit:cover;cursor:pointer" onclick="viewPhoto(${p.id})">
+      <button onclick="delPhoto(${p.id},${dayId})" style="position:absolute;top:5px;right:5px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
+    </div>`).join('')}
+  </div>`:'<div style="text-align:center;padding:16px 0;font-size:13px;color:var(--t3)">Noch keine Fotos für diesen Tag</div>';
+  return`${grid}
+    <input type="file" id="photo-in-${dayId}" accept="image/*" capture="environment" style="display:none" onchange="uploadPhoto(${dayId},this)">
+    <input type="file" id="photo-gallery-${dayId}" accept="image/*" style="display:none" onchange="uploadPhoto(${dayId},this)">
+    <div style="display:flex;gap:8px">
+      <button onclick="document.getElementById('photo-in-${dayId}').click()" style="flex:1;background:var(--acc);color:#fff;border:none;border-radius:var(--r1);padding:11px;font-size:13px;font-weight:700;cursor:pointer">📷 Kamera</button>
+      <button onclick="document.getElementById('photo-gallery-${dayId}').click()" style="flex:1;background:var(--acc-l);color:var(--acc-d);border:none;border-radius:var(--r1);padding:11px;font-size:13px;font-weight:700;cursor:pointer">🖼 Galerie</button>
+    </div>`;
+}
+
+async function uploadPhoto(dayId,input){
+  const file=input.files[0];if(!file)return;
+  const wrap=document.getElementById(`photos-wrap-${dayId}`);
+  if(wrap)wrap.innerHTML=`<div style="text-align:center;padding:20px;color:var(--t3);font-size:13px">⏳ Foto wird gespeichert…</div>`;
+  // Bild komprimieren
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const img=new Image();
+    img.onload=async()=>{
+      const canvas=document.createElement('canvas');
+      const max=1200;
+      let w=img.width,h=img.height;
+      if(w>max){h=Math.round(h*max/w);w=max;}
+      if(h>max){w=Math.round(w*max/h);h=max;}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const dataUrl=canvas.toDataURL('image/jpeg',0.82);
+      try{
+        await dbSavePhoto(dayId,file.name,dataUrl);
+        await loadPhotosForDay(dayId);
+      }catch(err){if(wrap)wrap.innerHTML=`<div style="color:var(--red);padding:12px;font-size:13px">Fehler beim Speichern.</div>`;}
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function viewPhoto(id){
+  const tx=db.transaction('docs','readonly');
+  const req=tx.objectStore('docs').get(id);
+  req.onsuccess=()=>{
+    if(!req.result)return;
+    const overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer';
+    overlay.onclick=()=>overlay.remove();
+    overlay.innerHTML=`<img src="${req.result.dataUrl}" style="max-width:95vw;max-height:90vh;border-radius:8px;object-fit:contain">`;
+    document.body.appendChild(overlay);
+  };
+}
+
+async function delPhoto(id,dayId){
+  await dbDeleteDoc(id);
+  await loadPhotosForDay(dayId);
+}
+// ─────────────────────────────────────────────────────────────
 let db=null;
 function initDB(){
   return new Promise((res,rej)=>{
@@ -451,6 +549,7 @@ function loadData(){
   migrateExpenses();
 }
 function saveCar(){localStorage.setItem('rb26_car',JSON.stringify(rentalCosts));showSaved();}
+function saveExp(){localStorage.setItem('rb26_exp',JSON.stringify(expenses));showSaved();}
 
 // Alte Datenformat (Strings/Zahlen) → neues Array-Format umwandeln
 function migrateExpenses(){
@@ -658,7 +757,7 @@ async function exportBackup(){
   }catch(e){}
 
   const data={
-    expenses,mileage,rentalCosts,docs,
+    expenses,mileage,rentalCosts,docs,parkingNotes,
     wxCache:localStorage.getItem('rb26_wx'),
     rate:localStorage.getItem('rb26_rate'),
     exportedAt:new Date().toISOString()
@@ -681,7 +780,7 @@ function importBackup(input){
       if(d.expenses){expenses=d.expenses;localStorage.setItem('rb26_exp',JSON.stringify(expenses));}
       if(d.mileage){mileage=d.mileage;localStorage.setItem('rb26_mil',JSON.stringify(mileage));}
       if(d.rentalCosts){rentalCosts=d.rentalCosts;localStorage.setItem('rb26_car',JSON.stringify(rentalCosts));}
-      if(d.wxCache)localStorage.setItem('rb26_wx',d.wxCache);
+      if(d.parkingNotes){parkingNotes=d.parkingNotes;localStorage.setItem('rb26_park',JSON.stringify(parkingNotes));}
       if(d.rate)localStorage.setItem('rb26_rate',d.rate);
       migrateExpenses();loadWxCache();
 
@@ -737,6 +836,7 @@ function render(){
     page==='car'?renderCarOverview():
     page==='tip'?renderTipCalc():
     page==='tz'?renderTimezone():
+    page==='stats'?renderStats():
     renderDay();
 }
 
@@ -787,6 +887,14 @@ function renderHome(){
     </div>
     <div class="dc-arr" style="color:var(--blu)">›</div>
   </div>
+  <div class="day-card" onclick="page='stats';render()" style="background:#f5f0ff;border-color:#7060c0">
+    <div class="dc-badge" style="background:#7060c0;color:#fff"><span style="font-size:18px">🏆</span></div>
+    <div class="dc-info">
+      <div class="dc-title" style="color:#3a2880">Reise-Statistik</div>
+      <div class="dc-sub" style="color:#7060c0">Meilen · Kosten · Highlights</div>
+    </div>
+    <div class="dc-arr" style="color:#7060c0">›</div>
+  </div>
   <div class="day-card" onclick="page='tip';render()" style="background:#fff5f0;border-color:#d4823a">
     <div class="dc-badge" style="background:#d4823a;color:#fff"><span style="font-size:18px">💵</span></div>
     <div class="dc-info">
@@ -830,10 +938,10 @@ function renderDay(){
   const isFlugTag=d.id===0||d.id===21;
   const tabs=isFlugTag
     ?['route','flug','highlights','ausgaben','dokumente']
-    :['route','hotel','highlights','ausgaben','dokumente'];
+    :['route','hotel','highlights','ausgaben','fotos','dokumente'];
   const tabLabels=isFlugTag
     ?['🗺 Route','✈️ Flug','⭐ Highlights','💰 Ausgaben','📄 Docs']
-    :['🗺 Route','🏨 Hotel','⭐ Highlights','💰 Ausgaben','📄 Docs'];
+    :['🗺 Route','🏨 Hotel','⭐ Highlights','💰 Ausgaben','📸 Fotos','📄 Docs'];
   return`<div class="nav"><div class="nav-in">
     <button class="nav-back" onclick="goHome()">‹ Übersicht</button>
     <span class="nav-title">${d.tag}</span>
@@ -848,7 +956,7 @@ function renderDay(){
     ${d.from!==d.to?`<div class="hero-route">📍 ${d.from} → ${d.to}${d.miles?' · ca. '+d.miles+' Meilen':''}</div>`:`<div class="hero-route">📍 ${d.from}</div>`}
   </div>
   <div class="tab-bar">${tabs.map((t,i)=>`<button class="tab-btn${tab===t?' on':''}" onclick="setTab('${t}')">${tabLabels[i]}</button>`).join('')}</div>
-  <div class="content">${tab==='route'?renderRoute(d):tab==='flug'?(d.id===0?renderFlug():renderFlugRueck()):tab==='hotel'?renderHotel(d):tab==='highlights'?renderHighlights(d):tab==='dokumente'?renderDocs(d):renderAusgaben(d)}</div>
+  <div class="content">${tab==='route'?renderRoute(d):tab==='flug'?(d.id===0?renderFlug():renderFlugRueck()):tab==='hotel'?renderHotel(d):tab==='highlights'?renderHighlights(d):tab==='fotos'?renderFotos(d):tab==='dokumente'?renderDocs(d):renderAusgaben(d)}</div>
   <div class="pb-safe"></div>`;
 }
 
@@ -913,7 +1021,7 @@ function renderRoute(d){
     });
     out+=`</div></div></div>`;
   }
-  if(d.miles){
+  if(d.miles||d.id===1){
     const k=d.id;
     const mv=mileage[k]||{};
     const fuelCost=(parseFloat(mv.gallons)||0)*(parseFloat(mv.price)||0);
@@ -931,6 +1039,22 @@ function renderRoute(d){
       <div id="saved-msg" class="saved-msg hide">✓ Gespeichert</div>
     </div></div>`;
   }
+  // Parkplatz-Notizen
+  const parkNote=parkingNotes[d.id]||'';
+  out+=`<div class="card"><div class="card-hdr"><span class="card-ttl">🅿️ Parkplatz-Notizen</span></div><div class="card-body">
+    <textarea id="park-note-${d.id}" placeholder="z.B. Parkhaus XY, Level 3, Kennzeichen gemerkt…" oninput="saveParkNote(${d.id},this.value)"
+      style="width:100%;min-height:80px;padding:9px 10px;border:.5px solid var(--bdr);border-radius:var(--r1);font-size:13px;background:var(--bg);color:var(--t1);font-family:inherit;resize:vertical">${parkNote}</textarea>
+  </div></div>`;
+  // Tankstellen-Finder
+  const gasApple=`maps://?q=Tankstelle&near=${d.to||d.from}`;
+  const gasGoogle=`https://www.google.com/maps/search/gas+station/`;
+  out+=`<div class="card"><div class="card-hdr"><span class="card-ttl">⛽ Tankstellen in der Nähe</span></div><div class="card-body">
+    <div style="font-size:12px;color:var(--t2);margin-bottom:8px">Öffnet Karten-App mit Tankstellen-Suche</div>
+    <div style="display:flex;gap:8px">
+      <a href="${gasApple}" style="flex:1;background:#e8f0fa;color:var(--blu);border-radius:var(--r1);padding:11px 8px;font-size:13px;font-weight:700;text-align:center;text-decoration:none;display:block">🍎 Apple Maps</a>
+      <a href="${gasGoogle}" target="_blank" style="flex:1;background:var(--grn-l);color:var(--grn);border-radius:var(--r1);padding:11px 8px;font-size:13px;font-weight:700;text-align:center;text-decoration:none;display:block">🗺 Google Maps</a>
+    </div>
+  </div></div>`;
   return out;
 }
 
@@ -1017,7 +1141,22 @@ function renderHotel(d){
 
 function renderHighlights(d){
   if(!d.hl.length) return`<div style="text-align:center;padding:40px 20px;color:var(--t3);font-size:14px">Keine Highlights für diesen Tag</div>`;
-  return`<div class="card"><div class="card-body" style="gap:0">${d.hl.map(h=>`<div class="hl"><div class="hl-ico">${h.e}</div><div><div class="hl-nm">${h.n}</div><div class="hl-ds">${h.d}</div></div></div>`).join('')}</div></div>`;
+  return`<div class="card"><div class="card-body" style="gap:0">${d.hl.map(h=>{
+    const enc=encodeURIComponent(h.n+' '+d.to);
+    const appleNav=`maps://?q=${encodeURIComponent(h.n)}`;
+    const googleNav=`https://www.google.com/maps/search/?api=1&query=${enc}`;
+    return`<div class="hl">
+      <div class="hl-ico">${h.e}</div>
+      <div style="flex:1;min-width:0">
+        <div class="hl-nm">${h.n}</div>
+        <div class="hl-ds">${h.d}</div>
+        <div style="display:flex;gap:6px;margin-top:7px">
+          <a href="${appleNav}" style="background:#e8f0fa;color:var(--blu);border-radius:var(--r1);padding:5px 10px;font-size:11px;font-weight:700;text-decoration:none">🍎 Maps</a>
+          <a href="${googleNav}" target="_blank" style="background:var(--grn-l);color:var(--grn);border-radius:var(--r1);padding:5px 10px;font-size:11px;font-weight:700;text-decoration:none">🗺 Google</a>
+        </div>
+      </div>
+    </div>`;
+  }).join('')}</div></div>`;
 }
 
 function renderCardEntries(dayKey,cardKey,title,entries){
@@ -1143,6 +1282,121 @@ function renderTripTotal(){
       ${(grandUSD||grandEUR)?totalRow:''}
     </div></div>
     ${dayRows?`<div class="card"><div class="card-hdr"><span class="card-ttl">Ausgaben pro Tag</span></div><div class="card-body" style="gap:6px">${dayRows}</div></div>`:''}
+  </div><div class="pb-safe"></div>`;
+}
+
+function renderStats(){
+  // ── Strecke ──────────────────────────────────────────────
+  const driveDays=DAYS.filter(d=>d.miles>0||d.id===1);
+  const totalEstMiles=DAYS.reduce((s,d)=>s+d.miles,0);
+  const totalActMiles=driveDays.reduce((s,d)=>s+(parseFloat((mileage[d.id]||{}).actual)||0),0);
+  const totalGallons=driveDays.reduce((s,d)=>s+(parseFloat((mileage[d.id]||{}).gallons)||0),0);
+  const totalFuelCost=driveDays.reduce((s,d)=>{const mv=mileage[d.id]||{};return s+(parseFloat(mv.gallons)||0)*(parseFloat(mv.price)||0);},0);
+  const avgMpg=totalGallons>0&&totalActMiles>0?totalActMiles/totalGallons:0;
+  const longestDay=driveDays.reduce((best,d)=>{const m=parseFloat((mileage[d.id]||{}).actual)||0;return m>best.m?{d,m}:best;},{d:null,m:0});
+  const allPrices=driveDays.map(d=>parseFloat((mileage[d.id]||{}).price)||0).filter(p=>p>0);
+  const avgGasPrice=allPrices.length?allPrices.reduce((s,p)=>s+p,0)/allPrices.length:0;
+  const cheapestGas=allPrices.length?Math.min(...allPrices):0;
+  const priciest=allPrices.length?Math.max(...allPrices):0;
+
+  // ── Ausgaben ─────────────────────────────────────────────
+  const sumUSD=arr=>(Array.isArray(arr)?arr:[]).filter(e=>e.cur!=='eur').reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const sumEUR=arr=>(Array.isArray(arr)?arr:[]).filter(e=>e.cur==='eur').reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
+  const cards=[['mkk','mdk'],['vkk','vdk']];
+  const personTotals=DAYS.reduce((acc,d)=>{
+    const ex=expenses[d.id]||{};
+    acc.marcel+=sumUSD(ex.mkk)+sumUSD(ex.mdk)+sumEUR(ex.mkk)+sumEUR(ex.mdk);
+    acc.vati+=sumUSD(ex.vkk)+sumUSD(ex.vdk)+sumEUR(ex.vkk)+sumEUR(ex.vdk);
+    return acc;
+  },{marcel:0,vati:0});
+  const dayTotals=DAYS.map(d=>{
+    const ex=expenses[d.id]||{};
+    const t=sumUSD(ex.mkk)+sumUSD(ex.mdk)+sumUSD(ex.vkk)+sumUSD(ex.vdk)+
+             sumEUR(ex.mkk)+sumEUR(ex.mdk)+sumEUR(ex.vkk)+sumEUR(ex.vdk);
+    return{d,t};
+  });
+  const grandTotal=dayTotals.reduce((s,x)=>s+x.t,0);
+  const expDays=dayTotals.filter(x=>x.t>0);
+  const mostExpDay=expDays.length?expDays.reduce((b,x)=>x.t>b.t?x:b,expDays[0]):null;
+  const kkTotal=DAYS.reduce((s,d)=>{const ex=expenses[d.id]||{};return s+sumUSD(ex.mkk)+sumUSD(ex.vkk)+sumEUR(ex.mkk)+sumEUR(ex.vkk);},0);
+  const dkTotal=DAYS.reduce((s,d)=>{const ex=expenses[d.id]||{};return s+sumUSD(ex.mdk)+sumUSD(ex.vdk)+sumEUR(ex.mdk)+sumEUR(ex.vdk);},0);
+
+  // ── Fotos & Dokumente ─────────────────────────────────────
+  const photoDays=DAYS.filter(d=>d.id!==0&&d.id!==21);
+  const daysWithNotes=photoDays.filter(d=>parkingNotes[d.id]&&parkingNotes[d.id].trim()).length;
+
+  // ── Stat-Card helper ──────────────────────────────────────
+  const statCard=(title,rows,color)=>`
+    <div class="card"><div class="card-hdr"><span class="card-ttl">${title}</span></div><div class="card-body" style="gap:8px">
+      ${rows.filter(Boolean).map(([lbl,val,sub])=>`
+        <div style="display:flex;justify-content:space-between;align-items:${sub?'flex-start':'center'};padding:4px 0;border-bottom:.5px solid var(--bdr)">
+          <span style="font-size:12px;color:var(--t2)">${lbl}</span>
+          <div style="text-align:right">
+            <div style="font-size:14px;font-weight:700;color:${color||'var(--t1)'}">${val}</div>
+            ${sub?`<div style="font-size:11px;color:var(--t3)">${sub}</div>`:''}
+          </div>
+        </div>`).join('')}
+    </div></div>`;
+
+  const noData=`<div style="text-align:center;padding:14px;font-size:13px;color:var(--t3)">Noch keine Daten eingetragen</div>`;
+
+  return`<div class="nav"><div class="nav-in">
+    <button class="nav-back" onclick="page='home';render()">‹ Übersicht</button>
+    <span class="nav-title">Statistik</span>
+    <span class="nav-spc"></span>
+  </div></div>
+  <div class="day-hero">
+    <div class="hero-tag">Pacific Northwest · Juni 2026</div>
+    <div class="hero-title">Reise-Statistik</div>
+    <div class="hero-route">Alle Daten auf einen Blick</div>
+  </div>
+  <div class="content">
+
+    ${totalActMiles>0?statCard('🗺️ Strecke',[
+      ['Gefahrene Meilen',totalActMiles.toLocaleString('de-DE')+' mi',`von ${totalEstMiles.toLocaleString('de-DE')} mi geplant`],
+      ['Ø pro Fahrtag',driveDays.length?Math.round(totalActMiles/driveDays.length)+' mi':'-'],
+      longestDay.d?['Längster Tag',longestDay.m+' mi',longestDay.d.title]:null,
+      avgMpg>0?['Ø Verbrauch',avgMpg.toFixed(1)+' mpg',totalGallons.toFixed(1)+' Gallonen gesamt']:null,
+    ],'var(--blu)'):`<div class="card"><div class="card-hdr"><span class="card-ttl">🗺️ Strecke</span></div>${noData}</div>`}
+
+    ${totalFuelCost>0?statCard('⛽ Tanken',[
+      ['Spritkosten gesamt','$'+totalFuelCost.toFixed(2)],
+      avgGasPrice>0?['Ø Preis / Gallon','$'+avgGasPrice.toFixed(3)]:null,
+      cheapestGas>0?['Günstigste Tankstelle','$'+cheapestGas.toFixed(3)+'/gal']:null,
+      priciest>0&&priciest!==cheapestGas?['Teuerste Tankstelle','$'+priciest.toFixed(3)+'/gal']:null,
+    ],'var(--grn)'):`<div class="card"><div class="card-hdr"><span class="card-ttl">⛽ Tanken</span></div>${noData}</div>`}
+
+    ${grandTotal>0?statCard('💰 Ausgaben',[
+      ['Gesamtkosten Reise', (grandTotal+(usdToEur?totalFuelCost*0:0)).toFixed(2)+' $+€'],
+      ['Marcel gesamt',personTotals.marcel.toFixed(2)+'$'],
+      ['Vati gesamt',personTotals.vati.toFixed(2)+'$'],
+      mostExpDay?['Teuerster Tag',mostExpDay.t.toFixed(2)+'$',mostExpDay.d.title]:null,
+      kkTotal>0?['Kreditkarten gesamt',kkTotal.toFixed(2)+'$']:null,
+      dkTotal>0?['Debitkarten gesamt',dkTotal.toFixed(2)+'$']:null,
+    ],'var(--acc)'):`<div class="card"><div class="card-hdr"><span class="card-ttl">💰 Ausgaben</span></div>${noData}</div>`}
+
+    <div class="card"><div class="card-hdr"><span class="card-ttl">📸 Unterwegs</span></div><div class="card-body" style="gap:8px">
+      <div style="display:flex;justify-content:space-around;padding:10px 0">
+        ${[
+          ['Fahrtage',driveDays.filter(d=>(mileage[d.id]||{}).actual).length,'✅'],
+          ['Parknotizen',daysWithNotes,'🅿️'],
+          ['Tage gesamt',new Set(DAYS.map(d=>d.date)).size,'📅'],
+        ].map(([lbl,val,ico])=>`<div style="text-align:center">
+          <div style="font-size:28px">${ico}</div>
+          <div style="font-size:22px;font-weight:700;margin:4px 0">${val}</div>
+          <div style="font-size:11px;color:var(--t3)">${lbl}</div>
+        </div>`).join('')}
+      </div>
+    </div></div>
+
+    ${grandTotal>0||totalActMiles>0?`<div class="card" style="background:var(--acc);color:#fff">
+      <div class="card-body" style="text-align:center;padding:16px">
+        <div style="font-size:28px;margin-bottom:8px">🏆</div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:4px">Pacific Northwest geschafft!</div>
+        <div style="font-size:13px;opacity:.85">${totalActMiles>0?totalActMiles.toLocaleString('de-DE')+' Meilen · ':''} ${new Set(DAYS.map(d=>d.date)).size} Tage · Unvergesslich 🌲</div>
+      </div>
+    </div>`:''}
+
   </div><div class="pb-safe"></div>`;
 }
 
@@ -1320,7 +1574,7 @@ function renderCarOverview(){
 
   // Streckendaten
   const totalEstMiles=DAYS.reduce((s,d)=>s+d.miles,0);
-  const driveDays=DAYS.filter(d=>d.miles>0);
+  const driveDays=DAYS.filter(d=>d.miles>0||d.id===1);
   const totalActMiles=driveDays.reduce((s,d)=>s+(parseFloat((mileage[d.id]||{}).actual)||0),0);
   const totalFuelCost=driveDays.reduce((s,d)=>{
     const mv=mileage[d.id]||{};
@@ -1458,6 +1712,7 @@ function saveMilField(id,field,val){
 
 loadData();
 loadWxCache();
+loadParkingNotes();
 fetchExchangeRate();
 initDB().catch(()=>console.warn('IndexedDB nicht verfügbar'));
 
