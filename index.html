@@ -616,25 +616,25 @@ function wxLabel(code){
 }
 
 async function fetchWeatherAll(){
-  // Unique koordinaten-Sets sammeln
   const groups={};
   DAYS.forEach(d=>{
     const c=DAY_COORDS[d.id];
     if(!c)return;
     const key=`${c[0]}_${c[1]}`;
-    if(!groups[key])groups[key]={lat:c[0],lon:c[1],days:[]};
-    // ISO-Datum berechnen
-    const dt=new Date(TRIP_START);dt.setDate(dt.getDate()+d.id);
-    groups[key].days.push({id:d.id,date:dt.toISOString().slice(0,10)});
+    if(!groups[key])groups[key]={lat:c[0],lon:c[1]};
   });
   let anySuccess=false;
+  let lastError='';
   await Promise.all(Object.values(groups).map(async g=>{
     const url=`https://api.open-meteo.com/v1/forecast?latitude=${g.lat}&longitude=${g.lon}`+
       `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode`+
-      `&timezone=America%2FLos_Angeles&start_date=2026-06-05&end_date=2026-06-24`;
+      `&timezone=America%2FLos_Angeles&start_date=2026-06-05&end_date=2026-06-24&forecast_days=16`;
     try{
-      const r=await fetch(url);if(!r.ok)return;
+      const r=await fetch(url,{signal:AbortSignal.timeout(8000)});
       const data=await r.json();
+      // API liefert Fehlermeldung wenn Datum zu weit in der Zukunft
+      if(data.error){lastError=data.reason||'API-Fehler';return;}
+      if(!data.daily||!data.daily.time)return;
       const key=`${g.lat}_${g.lon}`;
       if(!wxCache[key])wxCache[key]={};
       data.daily.time.forEach((date,i)=>{
@@ -646,11 +646,23 @@ async function fetchWeatherAll(){
         };
       });
       anySuccess=true;
-    }catch(e){}
+    }catch(e){lastError=e.message||'Netzwerkfehler';}
   }));
   if(anySuccess){
     wxCache._updated=Date.now();
+    wxCache._error=null;
     saveWxCache();
+  } else {
+    // Reise ist noch zu weit in der Zukunft – das ist normal
+    const today=new Date();
+    const tripStart=new Date('2026-06-05');
+    const daysUntil=Math.round((tripStart-today)/(1000*60*60*24));
+    if(daysUntil>16){
+      wxCache._error=`Reise beginnt in ${daysUntil} Tagen – Live-Wetter ab ca. ${daysUntil-16} Tagen vor Abreise`;
+    } else {
+      wxCache._error=lastError||'Verbindungsfehler';
+    }
+    localStorage.setItem('rb26_wx',JSON.stringify(wxCache));
   }
   return anySuccess;
 }
@@ -671,15 +683,16 @@ async function renderWeatherOverview(){
   try{
     const ok=await fetchWeatherAll();
     if(loading)loading.style.display='none';
-    if(ok&&updated){
-      const ts=wxCache._updated;
-      updated.textContent='🟢 Live-Daten · Stand: '+new Date(ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-    } else if(!ok){
-      if(loading)loading.style.display='none';
-      if(updated&&!wxCache._updated)updated.textContent='📵 Keine Verbindung – gespeicherte Daten';
+    if(updated){
+      if(ok){
+        updated.textContent='🟢 Live-Daten · Stand: '+new Date(wxCache._updated).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+      } else {
+        updated.textContent=wxCache._error?`ℹ️ ${wxCache._error}`:'📵 Keine Verbindung';
+      }
     }
   }catch(e){
     if(loading)loading.style.display='none';
+    if(updated)updated.textContent='❌ Fehler beim Laden';
   }
   if(grid)grid.innerHTML=buildWxGrid();
 }
@@ -740,7 +753,7 @@ async function refreshWeather(){
     if(grid)grid.innerHTML=buildWxGrid();
     if(updated)updated.textContent=ok
       ?'🟢 Live-Daten · Stand: '+new Date(wxCache._updated).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})
-      :'❌ Verbindung fehlgeschlagen – bitte erneut versuchen';
+      :(wxCache._error?`ℹ️ ${wxCache._error}`:'❌ Verbindung fehlgeschlagen');
   }catch(e){
     const updated=document.getElementById('wx-updated');
     if(updated)updated.textContent='❌ Fehler beim Laden';
