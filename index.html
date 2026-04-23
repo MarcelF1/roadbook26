@@ -616,7 +616,6 @@ function wxLabel(code){
 }
 
 async function fetchWeatherAll(){
-  if(!navigator.onLine)return false;
   // Unique koordinaten-Sets sammeln
   const groups={};
   DAYS.forEach(d=>{
@@ -666,20 +665,21 @@ function getWxForDay(dayId){
 
 async function renderWeatherOverview(){
   document.getElementById('app').innerHTML=buildWeatherShell();
-  // Wetterdaten laden
   const loading=document.getElementById('wx-loading');
   const grid=document.getElementById('wx-grid');
   const updated=document.getElementById('wx-updated');
-  if(navigator.onLine){
+  try{
     const ok=await fetchWeatherAll();
     if(loading)loading.style.display='none';
     if(ok&&updated){
       const ts=wxCache._updated;
       updated.textContent='🟢 Live-Daten · Stand: '+new Date(ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    } else if(!ok){
+      if(loading)loading.style.display='none';
+      if(updated&&!wxCache._updated)updated.textContent='📵 Keine Verbindung – gespeicherte Daten';
     }
-  }else{
-    if(loading)loading.innerHTML='📵 Offline – zeige gespeicherte Daten';
-    setTimeout(()=>{if(loading)loading.style.display='none';},2000);
+  }catch(e){
+    if(loading)loading.style.display='none';
   }
   if(grid)grid.innerHTML=buildWxGrid();
 }
@@ -733,11 +733,18 @@ function buildWxGrid(){
 async function refreshWeather(){
   const btn=document.querySelector('.add-btn');
   if(btn){btn.textContent='⏳';btn.disabled=true;}
-  const ok=await fetchWeatherAll();
-  const grid=document.getElementById('wx-grid');
-  const updated=document.getElementById('wx-updated');
-  if(grid)grid.innerHTML=buildWxGrid();
-  if(updated)updated.textContent=ok?'🟢 Live-Daten · Stand: '+new Date(wxCache._updated).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'❌ Kein Internet';
+  try{
+    const ok=await fetchWeatherAll();
+    const grid=document.getElementById('wx-grid');
+    const updated=document.getElementById('wx-updated');
+    if(grid)grid.innerHTML=buildWxGrid();
+    if(updated)updated.textContent=ok
+      ?'🟢 Live-Daten · Stand: '+new Date(wxCache._updated).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})
+      :'❌ Verbindung fehlgeschlagen – bitte erneut versuchen';
+  }catch(e){
+    const updated=document.getElementById('wx-updated');
+    if(updated)updated.textContent='❌ Fehler beim Laden';
+  }
   if(btn){btn.textContent='↻ Update';btn.disabled=false;}
 }
 
