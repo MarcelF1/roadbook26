@@ -206,7 +206,7 @@ const DAYS=[
 {id:1,date:"06.06.26",tag:"Tag 2",type:"rest",title:"Seattle",from:"Seattle",to:"Seattle",miles:0,
  stops:[],
  hotel:{nm:"W Seattle",addr:"1112 4th Ave, Seattle, WA 98101",ci:"–",co:"12:00",bkf:false,bkf_i:"❌ Nicht inklusive",bkf_t:"Lola Restaurant (2000 4th Ave) – Pancakes & French Toast"},
- hl:[{e:"🚝",n:"Seattle Center Monorail",d:"Gebaut 1962 – Elvis fuhr hier! Nur 2 Min. Fahrt, aber ein Erlebnis"},{e:"🌌",n:"Space Needle",d:"Glasböden, Skyrisers, rotierender Glasboden – vorab online buchen!"},{e:"🎸",n:"MoPOP",d:"Nirvana, Jimi Hendrix, Sci-Fi Ausstellung – 2–3 Stunden einplanen"},{e:"🐟",n:"Pike Place Market",d:"Fischwerfer, Gum Wall, erster Starbucks – mittags für Lunch"},{e:"🏙️",n:"Columbia Center Sky View",d:"73. Stock, höchstes öff. Observatorium der Westküste – Blick auf Space Needle von oben"},{e:"🌸",n:"Chihuly Garden & Glass",d:"Glaskunst direkt neben Space Needle – Kombi-Ticket spart Geld!"}],
+ hl:[{e:"🚝",n:"Seattle Center Monorail",d:"Gebaut 1962 – Elvis fuhr hier! Nur 2 Min. Fahrt, aber ein Erlebnis"},{e:"🗼",n:"Space Needle · 11:00 Uhr ✅",d:"Tickets vorhanden! Eingang 400 Broad St – 10 Min. vor 11:00 Uhr dort sein · Glasböden & rotierender Glasboden · Skyrisers"},{e:"🌸",n:"Chihuly Garden & Glass",d:"Direkt neben Space Needle – Kombi-Ticket? Sonst ca. 12:00 Uhr nach Space Needle"},{e:"🎸",n:"MoPOP",d:"Nirvana, Jimi Hendrix, Sci-Fi – nachmittags, 2–3 Stunden einplanen"},{e:"🐟",n:"Pike Place Market",d:"Fischwerfer, Gum Wall, erster Starbucks – mittags für Lunch ca. 13:30 Uhr"},{e:"🏙️",n:"Columbia Center Sky View · 17:00 Uhr ✅",d:"Tickets vorhanden! 701 5th Ave, Eingang 5th Ave · 73. Stock · höchstes öff. Observatorium der Westküste – Blick auf Space Needle von oben"}],
  wx:{t:"14–19°C",d:"Bewölkt, ca. 30% Regenrisiko – Jacke empfohlen"}},
 
 {id:2,date:"07.06.26",tag:"Tag 3",type:"drive",title:"Seattle → Port Angeles",from:"Seattle",to:"Port Angeles",miles:180,
@@ -333,6 +333,10 @@ let usdToEur=null; // current exchange rate
 let parkingNotes={};
 function loadParkingNotes(){try{parkingNotes=JSON.parse(localStorage.getItem('rb26_park')||'{}');}catch(e){parkingNotes={};}}
 function saveParkNote(dayId,val){parkingNotes[dayId]=val;localStorage.setItem('rb26_park',JSON.stringify(parkingNotes));}
+
+let manualDone={};
+function loadManualDone(){try{manualDone=JSON.parse(localStorage.getItem('rb26_done')||'{}');}catch(e){manualDone={};}}
+function toggleDone(dayId,e){e.stopPropagation();manualDone[dayId]=!manualDone[dayId];localStorage.setItem('rb26_done',JSON.stringify(manualDone));render();}
 
 // ── Fotos in IndexedDB ───────────────────────────────────────
 function dbSavePhoto(dayId,name,dataUrl){
@@ -538,6 +542,73 @@ function renderDocs(d){
     <div class="card-body" id="docs-wrap-${d.id}">
       <div style="text-align:center;padding:20px;color:var(--t3);font-size:13px">Wird geladen…</div>
     </div></div>`;
+}
+// ─────────────────────────────────────────────────────────────
+
+// ── Erinnerungen ─────────────────────────────────────────────
+const REMINDERS=[
+  {date:'2026-06-06',hour:10,min:30,title:'Space Needle in 30 Min! 🗼',body:'Ticket 11:00 Uhr · 400 Broad St · Jetzt aufbrechen!',dayId:1},
+  {date:'2026-06-06',hour:16,min:30,title:'Columbia Center in 30 Min! 🏙️',body:'Ticket 17:00 Uhr · 701 5th Ave · Eingang 5th Ave',dayId:1},
+];
+
+let notifTimers=[];
+
+async function requestNotifPermission(){
+  if(!('Notification' in window))return false;
+  if(Notification.permission==='granted')return true;
+  if(Notification.permission==='denied')return false;
+  const perm=await Notification.requestPermission();
+  return perm==='granted';
+}
+
+function scheduleReminders(){
+  // Alte Timer löschen
+  notifTimers.forEach(t=>clearTimeout(t));
+  notifTimers=[];
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const now=new Date();
+  const todayStr=now.toISOString().slice(0,10);
+  REMINDERS.filter(r=>r.date===todayStr).forEach(r=>{
+    const fireAt=new Date(now);
+    fireAt.setHours(r.hour,r.min,0,0);
+    const ms=fireAt-now;
+    if(ms>0){
+      const t=setTimeout(()=>{
+        new Notification(r.title,{body:r.body,icon:'./icons/icon-192.png',badge:'./icons/icon-192.png',tag:r.date+r.hour});
+      },ms);
+      notifTimers.push(t);
+      console.log(`Erinnerung geplant: ${r.title} in ${Math.round(ms/60000)} Min.`);
+    }
+  });
+}
+
+function getTodayReminders(){
+  const todayStr=new Date().toISOString().slice(0,10);
+  return REMINDERS.filter(r=>r.date===todayStr);
+}
+
+function renderReminderBanner(){
+  const today=getTodayReminders();
+  if(!today.length)return'';
+  const now=new Date();
+  const upcoming=today.filter(r=>{
+    const fire=new Date();fire.setHours(r.hour,r.min,0,0);
+    return fire>now;
+  });
+  if(!upcoming.length)return'';
+  return`<div style="margin:0 10px 10px;background:var(--acc);border-radius:var(--r2);padding:12px 14px;color:#fff">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.85;margin-bottom:4px">⏰ Heute noch</div>
+    ${upcoming.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <span style="font-size:13px;font-weight:600">${r.title.replace(' in 30 Min!','')}</span>
+      <span style="font-size:13px;opacity:.9">${String(r.hour).padStart(2,'0')}:${String(r.min+30).padStart(2,'0')} Uhr</span>
+    </div>`).join('')}
+  </div>`;
+}
+
+async function initReminders(){
+  if(location.hostname.includes('claudeusercontent.com'))return;
+  const granted=await requestNotifPermission();
+  if(granted)scheduleReminders();
 }
 // ─────────────────────────────────────────────────────────────
 
@@ -777,7 +848,7 @@ async function exportBackup(){
   }catch(e){}
 
   const data={
-    expenses,mileage,rentalCosts,docs,parkingNotes,
+    expenses,mileage,rentalCosts,docs,parkingNotes,manualDone,
     wxCache:localStorage.getItem('rb26_wx'),
     rate:localStorage.getItem('rb26_rate'),
     exportedAt:new Date().toISOString()
@@ -801,6 +872,7 @@ function importBackup(input){
       if(d.mileage){mileage=d.mileage;localStorage.setItem('rb26_mil',JSON.stringify(mileage));}
       if(d.rentalCosts){rentalCosts=d.rentalCosts;localStorage.setItem('rb26_car',JSON.stringify(rentalCosts));}
       if(d.parkingNotes){parkingNotes=d.parkingNotes;localStorage.setItem('rb26_park',JSON.stringify(parkingNotes));}
+      if(d.manualDone){manualDone=d.manualDone;localStorage.setItem('rb26_done',JSON.stringify(manualDone));}
       if(d.rate)localStorage.setItem('rb26_rate',d.rate);
       migrateExpenses();loadWxCache();
 
@@ -861,7 +933,8 @@ function render(){
 }
 
 function renderHome(){
-  const completed=Object.keys(mileage).filter(k=>mileage[k]&&mileage[k].actual).length;
+  const doneDates=new Set(DAYS.filter(d=>(mileage[d.id]&&mileage[d.id].actual)||manualDone[d.id]).map(d=>d.date));
+  const completed=doneDates.size;
   return`<div class="nav"><div class="nav-in"><span class="nav-spc"></span><span class="nav-title">Pacific Northwest 2026</span><span class="nav-spc"></span></div></div>
 <div class="home-hdr">
   <div class="hdr-eyebrow">Road Trip 2026</div>
@@ -874,18 +947,21 @@ function renderHome(){
   </div>
 </div>
 <div class="sec-hdr">Reiseprogramm</div>
+${renderReminderBanner()}
 <div class="day-list">${DAYS.map(d=>{
   const tclass=d.type==='fly'?'t-fly':d.type==='rest'?'t-rest':'';
-  const done=mileage[d.id]&&mileage[d.id].actual?'✓':'';
-  const badgeNum=d.id===0?'0':d.id===20?'1':d.id+1;
+  const autoDone=mileage[d.id]&&mileage[d.id].actual;
+  const isDone=autoDone||manualDone[d.id];
+  const badgeNum=d.id===0?'0':d.id===20?'1':d.id===21?'20':d.id+1;
   const badgeLbl=d.type==='fly'?'Flug':d.type==='rest'?'Rest':'Tag';
   return`<div class="day-card" onclick="goDay(${d.id})">
-    <div class="dc-badge ${tclass}"><span class="dc-n">${done||badgeNum}</span><span class="dc-l">${badgeLbl}</span></div>
+    <div class="dc-badge ${tclass}${isDone?' done':''}"><span class="dc-n">${isDone?'✓':badgeNum}</span><span class="dc-l">${badgeLbl}</span></div>
     <div class="dc-info">
       <div class="dc-date">${d.date}</div>
       <div class="dc-title">${d.title}</div>
       <div class="dc-sub">${d.type==='fly'?'✈️ ':d.type==='rest'?'📍 ':'🚗 '}${d.from}${d.from!==d.to?' → '+d.to:''}</div>
     </div>
+    <button onclick="toggleDone(${d.id},event)" style="background:${isDone?'var(--grn)':'var(--s2)'};color:${isDone?'#fff':'var(--t3)'};border:none;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s">${isDone?'✓':'○'}</button>
     <div class="dc-arr">›</div>
   </div>`;}).join('')}
 </div>
@@ -1313,7 +1389,8 @@ function renderStats(){
   const totalGallons=driveDays.reduce((s,d)=>s+(parseFloat((mileage[d.id]||{}).gallons)||0),0);
   const totalFuelCost=driveDays.reduce((s,d)=>{const mv=mileage[d.id]||{};return s+(parseFloat(mv.gallons)||0)*(parseFloat(mv.price)||0);},0);
   const avgMpg=totalGallons>0&&totalActMiles>0?totalActMiles/totalGallons:0;
-  const longestDay=driveDays.reduce((best,d)=>{const m=parseFloat((mileage[d.id]||{}).actual)||0;return m>best.m?{d,m}:best;},{d:null,m:0});
+  const drivenDays=DAYS.filter(d=>(d.miles>0||d.id===1)&&(mileage[d.id]||{}).actual!==undefined&&(mileage[d.id]||{}).actual!=='');
+  const longestDay=drivenDays.reduce((best,d)=>{const m=parseFloat((mileage[d.id]||{}).actual)||0;return m>best.m?{d,m}:best;},{d:null,m:0});
   const allPrices=driveDays.map(d=>parseFloat((mileage[d.id]||{}).price)||0).filter(p=>p>0);
   const avgGasPrice=allPrices.length?allPrices.reduce((s,p)=>s+p,0)/allPrices.length:0;
   const cheapestGas=allPrices.length?Math.min(...allPrices):0;
@@ -1374,7 +1451,7 @@ function renderStats(){
 
     ${totalActMiles>0?statCard('🗺️ Strecke',[
       ['Gefahrene Meilen',totalActMiles.toLocaleString('de-DE')+' mi',`von ${totalEstMiles.toLocaleString('de-DE')} mi geplant`],
-      ['Ø pro Fahrtag',driveDays.length?Math.round(totalActMiles/driveDays.length)+' mi':'-'],
+      ['Ø pro Fahrtag',drivenDays.length?Math.round(totalActMiles/drivenDays.length)+' mi':'-'],
       longestDay.d?['Längster Tag',longestDay.m+' mi',longestDay.d.title]:null,
       avgMpg>0?['Ø Verbrauch',avgMpg.toFixed(1)+' mpg',totalGallons.toFixed(1)+' Gallonen gesamt']:null,
     ],'var(--blu)'):`<div class="card"><div class="card-hdr"><span class="card-ttl">🗺️ Strecke</span></div>${noData}</div>`}
@@ -1387,7 +1464,14 @@ function renderStats(){
     ],'var(--grn)'):`<div class="card"><div class="card-hdr"><span class="card-ttl">⛽ Tanken</span></div>${noData}</div>`}
 
     ${grandTotal>0?statCard('💰 Ausgaben',[
-      ['Gesamtkosten Reise', (grandTotal+(usdToEur?totalFuelCost*0:0)).toFixed(2)+' $+€'],
+      ['Gesamtkosten Reise', (() => {
+        const totalEUR=DAYS.reduce((s,d)=>{const ex=expenses[d.id]||{};return s+sumEUR(ex.mkk)+sumEUR(ex.mdk)+sumEUR(ex.vkk)+sumEUR(ex.vdk);},0);
+        const totalUSD=DAYS.reduce((s,d)=>{const ex=expenses[d.id]||{};return s+sumUSD(ex.mkk)+sumUSD(ex.mdk)+sumUSD(ex.vkk)+sumUSD(ex.vdk);},0);
+        const parts=[];
+        if(totalUSD)parts.push('$'+totalUSD.toFixed(2));
+        if(totalEUR)parts.push('€'+totalEUR.toFixed(2));
+        return parts.join(' + ')||'–';
+      })()],
       ['Marcel gesamt',personTotals.marcel.toFixed(2)+'$'],
       ['Vati gesamt',personTotals.vati.toFixed(2)+'$'],
       mostExpDay?['Teuerster Tag',mostExpDay.t.toFixed(2)+'$',mostExpDay.d.title]:null,
@@ -1733,8 +1817,10 @@ function saveMilField(id,field,val){
 loadData();
 loadWxCache();
 loadParkingNotes();
+loadManualDone();
 fetchExchangeRate();
 initDB().catch(()=>console.warn('IndexedDB nicht verfügbar'));
+initReminders();
 
 // Offline-Banner
 function updateOfflineBanner(){
