@@ -7,7 +7,6 @@ const ASSETS = [
   './icons/apple-touch-icon.png'
 ];
 
-// Install: alle Assets cachen
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE).then(c => c.addAll(ASSETS))
@@ -15,7 +14,6 @@ self.addEventListener('install', e => {
   self.skipWaiting();
 });
 
-// Activate: alten Cache löschen
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
@@ -25,11 +23,8 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Fetch: Cache-first für App-Assets, Network-first für APIs
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-
-  // API-Aufrufe (Wetter, Wechselkurs) → immer Netzwerk versuchen, Cache als Fallback
   if (url.hostname.includes('open-meteo.com') || url.hostname.includes('open.er-api.com')) {
     e.respondWith(
       fetch(e.request)
@@ -42,8 +37,6 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
-
-  // App-Assets → Cache-first
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
