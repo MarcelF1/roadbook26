@@ -1400,24 +1400,48 @@ function renderStats(){
   // ── Ausgaben ─────────────────────────────────────────────
   const sumUSD=arr=>(Array.isArray(arr)?arr:[]).filter(e=>e.cur!=='eur').reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
   const sumEUR=arr=>(Array.isArray(arr)?arr:[]).filter(e=>e.cur==='eur').reduce((s,e)=>s+(parseFloat(e.amt)||0),0);
-  const cards=[['mkk','mdk'],['vkk','vdk']];
-  const personTotals=DAYS.reduce((acc,d)=>{
+
+  // Hilfsfunktion: USD+EUR → EUR (mit Kurs falls vorhanden, sonst getrennt anzeigen)
+  const toEUR=(usd,eur)=>usdToEur?usd*usdToEur+eur:null;
+  const fmtMixed=(usd,eur)=>{
+    const parts=[];
+    if(usd>0)parts.push(`$${usd.toFixed(2)}`);
+    if(eur>0)parts.push(`€${eur.toFixed(2)}`);
+    return parts.join(' + ')||'–';
+  };
+  const fmtTotal=(usd,eur)=>{
+    const inEur=toEUR(usd,eur);
+    if(inEur!==null)return`€${inEur.toFixed(2)}`;
+    return fmtMixed(usd,eur);
+  };
+
+  const personUSD={marcel:0,vati:0};
+  const personEUR={marcel:0,vati:0};
+  DAYS.forEach(d=>{
     const ex=expenses[d.id]||{};
-    acc.marcel+=sumUSD(ex.mkk)+sumUSD(ex.mdk)+sumEUR(ex.mkk)+sumEUR(ex.mdk);
-    acc.vati+=sumUSD(ex.vkk)+sumUSD(ex.vdk)+sumEUR(ex.vkk)+sumEUR(ex.vdk);
-    return acc;
-  },{marcel:0,vati:0});
+    personUSD.marcel+=sumUSD(ex.mkk)+sumUSD(ex.mdk);
+    personEUR.marcel+=sumEUR(ex.mkk)+sumEUR(ex.mdk);
+    personUSD.vati+=sumUSD(ex.vkk)+sumUSD(ex.vdk);
+    personEUR.vati+=sumEUR(ex.vkk)+sumEUR(ex.vdk);
+  });
+
   const dayTotals=DAYS.map(d=>{
     const ex=expenses[d.id]||{};
-    const t=sumUSD(ex.mkk)+sumUSD(ex.mdk)+sumUSD(ex.vkk)+sumUSD(ex.vdk)+
-             sumEUR(ex.mkk)+sumEUR(ex.mdk)+sumEUR(ex.vkk)+sumEUR(ex.vdk);
-    return{d,t};
+    const usd=sumUSD(ex.mkk)+sumUSD(ex.mdk)+sumUSD(ex.vkk)+sumUSD(ex.vdk);
+    const eur=sumEUR(ex.mkk)+sumEUR(ex.mdk)+sumEUR(ex.vkk)+sumEUR(ex.vdk);
+    const t=toEUR(usd,eur)??(usd+eur); // für Vergleich: wenn kein Kurs, einfach addieren
+    return{d,t,usd,eur};
   });
-  const grandTotal=dayTotals.reduce((s,x)=>s+x.t,0);
-  const expDays=dayTotals.filter(x=>x.t>0);
+  const grandUSD=personUSD.marcel+personUSD.vati;
+  const grandEUR=personEUR.marcel+personEUR.vati;
+  const grandTotal=grandUSD+grandEUR; // nur für "hat Daten" Check
+  const expDays=dayTotals.filter(x=>x.usd>0||x.eur>0);
   const mostExpDay=expDays.length?expDays.reduce((b,x)=>x.t>b.t?x:b,expDays[0]):null;
-  const kkTotal=DAYS.reduce((s,d)=>{const ex=expenses[d.id]||{};return s+sumUSD(ex.mkk)+sumUSD(ex.vkk)+sumEUR(ex.mkk)+sumEUR(ex.vkk);},0);
-  const dkTotal=DAYS.reduce((s,d)=>{const ex=expenses[d.id]||{};return s+sumUSD(ex.mdk)+sumUSD(ex.vdk)+sumEUR(ex.mdk)+sumEUR(ex.vdk);},0);
+
+  const kkUSD=DAYS.reduce((s,d)=>{const ex=expenses[d.id]||{};return s+sumUSD(ex.mkk)+sumUSD(ex.vkk);},0);
+  const kkEUR=DAYS.reduce((s,d)=>{const ex=expenses[d.id]||{};return s+sumEUR(ex.mkk)+sumEUR(ex.vkk);},0);
+  const dkUSD=DAYS.reduce((s,d)=>{const ex=expenses[d.id]||{};return s+sumUSD(ex.mdk)+sumUSD(ex.vdk);},0);
+  const dkEUR=DAYS.reduce((s,d)=>{const ex=expenses[d.id]||{};return s+sumEUR(ex.mdk)+sumEUR(ex.vdk);},0);
 
   // ── Fotos & Dokumente ─────────────────────────────────────
   const photoDays=DAYS.filter(d=>d.id!==0&&d.id!==21);
@@ -1465,19 +1489,12 @@ function renderStats(){
     ],'var(--grn)'):`<div class="card"><div class="card-hdr"><span class="card-ttl">⛽ Tanken</span></div>${noData}</div>`}
 
     ${grandTotal>0?statCard('💰 Ausgaben',[
-      ['Gesamtkosten Reise', (() => {
-        const totalEUR=DAYS.reduce((s,d)=>{const ex=expenses[d.id]||{};return s+sumEUR(ex.mkk)+sumEUR(ex.mdk)+sumEUR(ex.vkk)+sumEUR(ex.vdk);},0);
-        const totalUSD=DAYS.reduce((s,d)=>{const ex=expenses[d.id]||{};return s+sumUSD(ex.mkk)+sumUSD(ex.mdk)+sumUSD(ex.vkk)+sumUSD(ex.vdk);},0);
-        const parts=[];
-        if(totalUSD)parts.push('$'+totalUSD.toFixed(2));
-        if(totalEUR)parts.push('€'+totalEUR.toFixed(2));
-        return parts.join(' + ')||'–';
-      })()],
-      ['Marcel gesamt',personTotals.marcel.toFixed(2)+'$'],
-      ['Vati gesamt',personTotals.vati.toFixed(2)+'$'],
-      mostExpDay?['Teuerster Tag',mostExpDay.t.toFixed(2)+'$',mostExpDay.d.title]:null,
-      kkTotal>0?['Kreditkarten gesamt',kkTotal.toFixed(2)+'$']:null,
-      dkTotal>0?['Debitkarten gesamt',dkTotal.toFixed(2)+'$']:null,
+      ['Gesamtkosten Reise', fmtTotal(grandUSD,grandEUR), usdToEur?fmtMixed(grandUSD,grandEUR):null],
+      (personUSD.marcel>0||personEUR.marcel>0)?['Marcel gesamt',fmtMixed(personUSD.marcel,personEUR.marcel)]:null,
+      (personUSD.vati>0||personEUR.vati>0)?['Vati gesamt',fmtMixed(personUSD.vati,personEUR.vati)]:null,
+      mostExpDay?['Teuerster Tag',fmtMixed(mostExpDay.usd,mostExpDay.eur),mostExpDay.d.title]:null,
+      (kkUSD>0||kkEUR>0)?['Kreditkarten gesamt',fmtMixed(kkUSD,kkEUR)]:null,
+      (dkUSD>0||dkEUR>0)?['Debitkarten gesamt',fmtMixed(dkUSD,dkEUR)]:null,
     ],'var(--acc)'):`<div class="card"><div class="card-hdr"><span class="card-ttl">💰 Ausgaben</span></div>${noData}</div>`}
 
     <div class="card"><div class="card-hdr"><span class="card-ttl">📸 Unterwegs</span></div><div class="card-body" style="gap:8px">
