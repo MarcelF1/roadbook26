@@ -551,6 +551,43 @@ const REMINDERS=[
   {date:'2026-06-06',hour:16,min:30,title:'Columbia Center in 30 Min! 🏙️',body:'Ticket 17:00 Uhr · 701 5th Ave · Eingang 5th Ave',dayId:1},
 ];
 
+// Reisedaten 05.06–24.06 → Zeitzone: PDT (UTC-7) für WA/OR, MDT (UTC-6) für ID/MT/WY
+// Tage mit MDT (UTC-6): id 9–10 Boise, 11 Twin Falls, 12–13 Yellowstone, 14–16 Montana
+const MDT_DAYS=new Set([9,10,11,12,13,14,15,16,17]);
+
+function getTripDates(){
+  const dates=[];
+  const start=new Date('2026-06-05');
+  for(let i=0;i<20;i++){
+    const d=new Date(start);
+    d.setDate(d.getDate()+i);
+    dates.push(d.toISOString().slice(0,10));
+  }
+  return dates;
+}
+
+function getDailyRemindersForToday(){
+  const tripDates=getTripDates();
+  // Lokale Ortszeit des Geräts verwenden
+  const nowLocal=new Date();
+  const todayLocal=nowLocal.toLocaleDateString('en-CA'); // YYYY-MM-DD in lokaler Zeit
+  if(!tripDates.includes(todayLocal))return[];
+  // Tagesindex herausfinden
+  const dayIdx=tripDates.indexOf(todayLocal);
+  const day=DAYS[dayIdx]||DAYS.find(d=>d.id===dayIdx);
+  const dayTitle=day?day.title:'Heute';
+  return[
+    {date:todayLocal,hour:10,min:0,
+      title:`☀️ Guten Morgen – Daten checken!`,
+      body:`${dayTitle} – Ausgaben & Tankung von gestern noch offen?`,
+      daily:true},
+    {date:todayLocal,hour:19,min:0,
+      title:`🌙 Abend-Check – Alles eingetragen?`,
+      body:`${dayTitle} – Ausgaben 💰 · Tankung ⛽ · Meilen 🚗 aktuell?`,
+      daily:true},
+  ];
+}
+
 let notifTimers=[];
 
 async function requestNotifPermission(){
@@ -562,29 +599,41 @@ async function requestNotifPermission(){
 }
 
 function scheduleReminders(){
-  // Alte Timer löschen
   notifTimers.forEach(t=>clearTimeout(t));
   notifTimers=[];
   if(!('Notification' in window)||Notification.permission!=='granted')return;
   const now=new Date();
-  const todayStr=now.toISOString().slice(0,10);
+  const todayStr=now.toLocaleDateString('en-CA');
+
+  // Ticket-Erinnerungen
   REMINDERS.filter(r=>r.date===todayStr).forEach(r=>{
     const fireAt=new Date(now);
     fireAt.setHours(r.hour,r.min,0,0);
     const ms=fireAt-now;
     if(ms>0){
-      const t=setTimeout(()=>{
-        new Notification(r.title,{body:r.body,icon:'./icons/icon-192.png',badge:'./icons/icon-192.png',tag:r.date+r.hour});
-      },ms);
+      const t=setTimeout(()=>new Notification(r.title,{body:r.body,icon:'./icons/icon-192.png',tag:r.date+r.hour}),ms);
       notifTimers.push(t);
-      console.log(`Erinnerung geplant: ${r.title} in ${Math.round(ms/60000)} Min.`);
+    }
+  });
+
+  // Tägliche Dateneingabe-Erinnerungen
+  getDailyRemindersForToday().forEach(r=>{
+    const fireAt=new Date(now);
+    fireAt.setHours(r.hour,r.min,0,0);
+    const ms=fireAt-now;
+    if(ms>0){
+      const t=setTimeout(()=>new Notification(r.title,{body:r.body,icon:'./icons/icon-192.png',tag:'daily-'+r.hour}),ms);
+      notifTimers.push(t);
+      console.log(`Tägliche Erinnerung: ${r.title} in ${Math.round(ms/60000)} Min.`);
     }
   });
 }
 
 function getTodayReminders(){
-  const todayStr=new Date().toISOString().slice(0,10);
-  return REMINDERS.filter(r=>r.date===todayStr);
+  const todayStr=new Date().toLocaleDateString('en-CA');
+  const fixed=REMINDERS.filter(r=>r.date===todayStr);
+  const daily=getDailyRemindersForToday();
+  return[...fixed,...daily];
 }
 
 function renderReminderBanner(){
@@ -684,6 +733,15 @@ function wxLabel(code){
   if(code<=48)return'Nebel';if(code<=55)return'Nieselregen';
   if(code<=65)return'Regen';if(code<=77)return'Schnee';
   if(code<=82)return'Schauer';return'Gewitter';
+}
+
+function wxWarning(code,precip){
+  if(code==null)return null;
+  if(code>=95)return{ico:'⛈️',txt:'Gewitter möglich – Outdoor-Aktivitäten prüfen!',col:'#c0392b',bg:'#fdecea'};
+  if(code>=71&&code<=77)return{ico:'❄️',txt:'Schnee möglich – Bergpässe prüfen!',col:'#1a6ea8',bg:'#e8f0fa'};
+  if(code>=63&&code<=65)return{ico:'🌧️',txt:'Starkregen erwartet – Regenjacke einpacken',col:'#1a6ea8',bg:'#e8f0fa'};
+  if(precip!=null&&precip>=70)return{ico:'☔',txt:`Regenwahrscheinlichkeit ${precip}% – Regenschutz empfohlen`,col:'#1a6ea8',bg:'#e8f0fa'};
+  return null;
 }
 
 async function fetchWeatherAll(){
@@ -793,9 +851,14 @@ function buildWxGrid(){
     const desc=live?wxLabel(live.code):d.wx.d;
     const ico=live?wxEmoji(live.code):'📋';
     const precip=live&&live.precip!=null?`💧 ${live.precip}%`:'';
+    const warning=live?wxWarning(live.code,live.precip):null;
     const badge=isLive
       ?`<span style="background:var(--grn-l);color:var(--grn);font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px">Live</span>`
       :`<span style="background:var(--s2);color:var(--t3);font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px">Plan</span>`;
+    const warnBanner=warning?`<div style="margin:0 13px 10px;background:${warning.bg};border-radius:6px;padding:7px 10px;display:flex;align-items:center;gap:7px">
+      <span style="font-size:14px">${warning.ico}</span>
+      <span style="font-size:12px;font-weight:600;color:${warning.col}">${warning.txt}</span>
+    </div>`:'';
     return`<div class="card" style="cursor:pointer" onclick="goDay(${d.id})">
       <div style="display:flex;align-items:center;gap:12px;padding:11px 13px">
         <div style="font-size:28px;flex-shrink:0">${ico}</div>
@@ -810,6 +873,7 @@ function buildWxGrid(){
         </div>
         <div style="color:var(--t3);font-size:15px">›</div>
       </div>
+      ${warnBanner}
     </div>`;
   }).join('');
 }
@@ -1015,6 +1079,34 @@ ${renderReminderBanner()}
     </div>
     <div class="dc-arr" style="color:var(--acc)">›</div>
   </div>
+</div>
+<div class="sec-hdr">Schnellsuche</div>
+<div style="padding:0 10px 10px;display:flex;gap:8px">
+  <a href="https://www.google.com/maps/search/Walmart+near+me" target="_blank"
+    style="flex:1;background:#0071ce;color:#fff;border-radius:var(--r2);padding:14px 8px;font-size:13px;font-weight:700;text-align:center;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:5px">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M13 1L14.2 5.8L17.5 2.1L15.6 6.7L20.5 5.5L17 8.9L21.9 9.5L17.8 11.8L22 13L17.8 14.2L21.9 16.5L17 17.1L20.5 20.5L15.6 19.3L17.5 23.9L14.2 20.2L13 25L11.8 20.2L8.5 23.9L10.4 19.3L5.5 20.5L9 17.1L4.1 16.5L8.2 14.2L4 13L8.2 11.8L4.1 9.5L9 8.9L5.5 5.5L10.4 6.7L8.5 2.1L11.8 5.8Z" fill="#FFC220"/>
+    </svg>
+    Walmart
+  </a>
+  <a href="https://www.google.com/maps/search/Starbucks+near+me" target="_blank"
+    style="flex:1;background:#00704a;color:#fff;border-radius:var(--r2);padding:14px 8px;font-size:13px;font-weight:700;text-align:center;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:5px">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="13" cy="13" r="12" stroke="white" stroke-width="1.5" fill="none"/>
+      <circle cx="13" cy="13" r="9.5" stroke="white" stroke-width="1" fill="none"/>
+      <ellipse cx="13" cy="10" rx="3.5" ry="4.5" fill="white"/>
+      <path d="M7.5 13.5 C7.5 17.5 10 20 13 20 C16 20 18.5 17.5 18.5 13.5 L16.5 13 C16.5 16.5 15 18.2 13 18.2 C11 18.2 9.5 16.5 9.5 13 Z" fill="white"/>
+      <path d="M9.5 13L7.5 13.5M16.5 13L18.5 13.5" stroke="white" stroke-width="1"/>
+      <path d="M10 21.5 Q13 23 16 21.5" stroke="white" stroke-width="1.2" fill="none"/>
+    </svg>
+    Starbucks
+  </a>
+</div>
+<div style="padding:0 10px 4px;display:flex;gap:8px">
+  <a href="https://www.google.com/maps/search/gas+station+near+me" target="_blank"
+    style="flex:1;background:#f5a623;color:#7a4a00;border-radius:var(--r2);padding:12px 8px;font-size:13px;font-weight:700;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:7px">
+    <span style="font-size:18px">⛽</span>Tankstelle in der Nähe
+  </a>
 </div>
 <div class="sec-hdr">Daten</div>
 <div style="padding:0 10px 24px;display:flex;gap:8px">
