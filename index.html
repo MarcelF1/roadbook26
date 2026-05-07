@@ -331,12 +331,79 @@ let usdToEur=null; // current exchange rate
 
 // ── Parkplatz-Notizen ────────────────────────────────────────
 let parkingNotes={};
+// ── Supabase Sync ─────────────────────────────────────────────
+const SB_URL='https://cgqlfcwbajqiyqyfyrft.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNncWxmY3diYWpxaXlxeWZ5cmZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwOTc4MDAsImV4cCI6MjA5MzY3MzgwMH0.Tb4WIA05klRwDz1pEsU_emWW1dDPMPfC3V5tEBmMfY4';
+const SB_HDR={'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+
+let syncTimer=null;
+let syncPending=false;
+
+async function sbSet(key,value){
+  try{
+    await fetch(`${SB_URL}/rest/v1/roadbook_sync`,{
+      method:'POST',
+      headers:{...SB_HDR,'Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify({data_key:key,data_value:JSON.stringify(value),updated_at:new Date().toISOString()})
+    });
+  }catch(e){console.warn('Sync fehler:',e);}
+}
+
+async function sbGet(key){
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/roadbook_sync?data_key=eq.${key}&select=data_value`,{headers:SB_HDR});
+    const d=await r.json();
+    return d&&d[0]?JSON.parse(d[0].data_value):null;
+  }catch(e){return null;}
+}
+
+async function syncToCloud(){
+  if(!navigator.onLine)return;
+  await Promise.all([
+    sbSet('expenses',expenses),
+    sbSet('mileage',mileage),
+    sbSet('rentalCosts',rentalCosts),
+    sbSet('parkingNotes',parkingNotes),
+    sbSet('manualDone',manualDone),
+  ]);
+  showSyncStatus('🟢 Synced');
+}
+
+async function syncFromCloud(){
+  if(!navigator.onLine)return false;
+  try{
+    showSyncStatus('⏳ Wird geladen…');
+    const [exp,mil,car,park,done]=await Promise.all([
+      sbGet('expenses'),sbGet('mileage'),sbGet('rentalCosts'),sbGet('parkingNotes'),sbGet('manualDone')
+    ]);
+    if(exp){expenses=exp;localStorage.setItem('rb26_exp',JSON.stringify(exp));}
+    if(mil){mileage=mil;localStorage.setItem('rb26_mil',JSON.stringify(mil));}
+    if(car){rentalCosts=car;localStorage.setItem('rb26_car',JSON.stringify(car));}
+    if(park){parkingNotes=park;localStorage.setItem('rb26_park',JSON.stringify(park));}
+    if(done){manualDone=done;localStorage.setItem('rb26_done',JSON.stringify(done));}
+    migrateExpenses();
+    showSyncStatus('🟢 Aktuell');
+    return true;
+  }catch(e){showSyncStatus('🔴 Offline');return false;}
+}
+
+function scheduleSyncToCloud(){
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(()=>syncToCloud(),2000);
+}
+
+function showSyncStatus(msg){
+  const el=document.getElementById('sync-status');
+  if(el){el.textContent=msg;clearTimeout(el._t);el._t=setTimeout(()=>{if(el)el.textContent='☁️ Sync';},3000);}
+}
+// ─────────────────────────────────────────────────────────────
+
 function loadParkingNotes(){try{parkingNotes=JSON.parse(localStorage.getItem('rb26_park')||'{}');}catch(e){parkingNotes={};}}
-function saveParkNote(dayId,val){parkingNotes[dayId]=val;localStorage.setItem('rb26_park',JSON.stringify(parkingNotes));}
+function saveParkNote(dayId,val){parkingNotes[dayId]=val;localStorage.setItem('rb26_park',JSON.stringify(parkingNotes));scheduleSyncToCloud();}
 
 let manualDone={};
 function loadManualDone(){try{manualDone=JSON.parse(localStorage.getItem('rb26_done')||'{}');}catch(e){manualDone={};}}
-function toggleDone(dayId,e){e.stopPropagation();manualDone[dayId]=!manualDone[dayId];localStorage.setItem('rb26_done',JSON.stringify(manualDone));render();}
+function toggleDone(dayId,e){e.stopPropagation();manualDone[dayId]=!manualDone[dayId];localStorage.setItem('rb26_done',JSON.stringify(manualDone));scheduleSyncToCloud();render();}
 
 // ── Fotos in IndexedDB ───────────────────────────────────────
 function dbSavePhoto(dayId,name,dataUrl){
@@ -668,8 +735,8 @@ function loadData(){
   try{const saved=localStorage.getItem('rb26_rate');if(saved){const p=JSON.parse(saved);usdToEur=p.rate;}}catch(e){}
   migrateExpenses();
 }
-function saveCar(){localStorage.setItem('rb26_car',JSON.stringify(rentalCosts));showSaved();}
-function saveExp(){localStorage.setItem('rb26_exp',JSON.stringify(expenses));showSaved();}
+function saveCar(){localStorage.setItem('rb26_car',JSON.stringify(rentalCosts));showSaved();scheduleSyncToCloud();}
+function saveExp(){localStorage.setItem('rb26_exp',JSON.stringify(expenses));showSaved();scheduleSyncToCloud();}
 
 // Alte Datenformat (Strings/Zahlen) → neues Array-Format umwandeln
 function migrateExpenses(){
@@ -973,7 +1040,7 @@ function importBackup(input){
   reader.readAsText(file);
 }
 // ─────────────────────────────────────────────────────────────
-function saveMil(){localStorage.setItem('rb26_mil',JSON.stringify(mileage));showSaved();}
+function saveMil(){localStorage.setItem('rb26_mil',JSON.stringify(mileage));showSaved();scheduleSyncToCloud();}
 
 let savedTimer;
 function showSaved(){
@@ -999,7 +1066,9 @@ function render(){
 function renderHome(){
   const doneDates=new Set(DAYS.filter(d=>(mileage[d.id]&&mileage[d.id].actual)||manualDone[d.id]).map(d=>d.date));
   const completed=doneDates.size;
-  return`<div class="nav"><div class="nav-in"><span class="nav-spc"></span><span class="nav-title">Pacific Northwest 2026</span><span class="nav-spc"></span></div></div>
+  return`<div class="nav"><div class="nav-in"><span class="nav-spc"></span><span class="nav-title">Pacific Northwest 2026</span>
+    <button id="sync-status" onclick="syncFromCloud().then(ok=>{if(ok)render();})" style="background:none;border:none;font-size:12px;color:var(--t2);cursor:pointer;padding:4px 8px;border-radius:var(--r1);min-width:56px;text-align:right">☁️ Sync</button>
+  </div></div>
 <div class="home-hdr">
   <div class="hdr-eyebrow">Road Trip 2026</div>
   <div class="hdr-title">Pacific Northwest</div>
@@ -1931,6 +2000,8 @@ loadManualDone();
 fetchExchangeRate();
 initDB().catch(()=>console.warn('IndexedDB nicht verfügbar'));
 initReminders();
+// Beim Start von Cloud laden
+syncFromCloud().then(ok=>{if(ok)render();});
 
 // Offline-Banner
 function updateOfflineBanner(){
