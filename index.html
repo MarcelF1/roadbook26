@@ -341,12 +341,13 @@ let syncPending=false;
 
 async function sbSet(key,value){
   try{
-    await fetch(`${SB_URL}/rest/v1/roadbook_sync`,{
+    const r=await fetch(`${SB_URL}/rest/v1/roadbook_sync?on_conflict=data_key`,{
       method:'POST',
-      headers:{...SB_HDR,'Prefer':'resolution=merge-duplicates'},
+      headers:{...SB_HDR,'Prefer':'resolution=merge-duplicates,return=minimal'},
       body:JSON.stringify({data_key:key,data_value:JSON.stringify(value),updated_at:new Date().toISOString()})
     });
-  }catch(e){console.warn('Sync fehler:',e);}
+    if(!r.ok){const t=await r.text();console.warn('sbSet Fehler:',r.status,t);}
+  }catch(e){console.warn('Sync Fehler:',e);}
 }
 
 async function sbGet(key){
@@ -370,9 +371,9 @@ async function syncToCloud(){
 }
 
 async function syncFromCloud(){
-  if(!navigator.onLine)return false;
+  if(!navigator.onLine){showSyncStatus('📵 Offline');return false;}
   try{
-    showSyncStatus('⏳ Wird geladen…');
+    showSyncStatus('⏳ Lädt…');
     const [exp,mil,car,park,done]=await Promise.all([
       sbGet('expenses'),sbGet('mileage'),sbGet('rentalCosts'),sbGet('parkingNotes'),sbGet('manualDone')
     ]);
@@ -382,9 +383,14 @@ async function syncFromCloud(){
     if(park){parkingNotes=park;localStorage.setItem('rb26_park',JSON.stringify(park));}
     if(done){manualDone=done;localStorage.setItem('rb26_done',JSON.stringify(done));}
     migrateExpenses();
-    showSyncStatus('🟢 Aktuell');
+    const hasData=exp||mil||car;
+    showSyncStatus(hasData?'🟢 Aktuell':'🟢 Bereit');
     return true;
-  }catch(e){showSyncStatus('🔴 Offline');return false;}
+  }catch(e){
+    console.warn('syncFromCloud Fehler:',e);
+    showSyncStatus('🔴 Fehler');
+    return false;
+  }
 }
 
 function scheduleSyncToCloud(){
