@@ -192,9 +192,9 @@ input{font-family:inherit}
 <script>
 const DAYS=[
 {id:0,date:"05.06.26",tag:"Tag 0 · Flug",type:"fly",title:"Anreisetag – Flug",from:"Berlin",to:"Seattle SeaTac",miles:0,
- stops:[{n:"Berlin BER – Check-in ab 04:15 Uhr",f:1},{n:"Frankfurt FRA (LH 205, ab 07:15 Uhr)",m:""},{n:"Seattle SeaTac (LH 490, Ank. 11:55 Uhr)",m:"",l:1}],
+ stops:[{n:"Berlin BER – Check-in ab 04:30 Uhr",f:1},{n:"Frankfurt FRA (LH 203, ab 06:45 Uhr)",m:""},{n:"Seattle SeaTac (LH 490, Ank. 11:55 Uhr)",m:"",l:1}],
  hotel:{nm:"W Seattle",addr:"1112 4th Ave, Seattle, WA 98101",ci:"16:00",co:"12:00",bkf:false,bkf_i:"❌ Nicht inklusive",bkf_t:"Lola Restaurant (2000 4th Ave) – Pancakes, French Toast, Bacon – 10 Min. Fußweg"},
- hl:[{e:"✈️",n:"LH 205 – Berlin → Frankfurt",d:"Abflug 07:15 Uhr · Ankunft Frankfurt ca. 08:20 Uhr · Terminal 1"},{e:"✈️",n:"LH 490 – Frankfurt → Seattle",d:"Abflug Frankfurt ca. 10:25 Uhr · Ankunft Seattle SeaTac 11:55 Uhr (Ortszeit) · ca. 10h Flug"},{e:"🛂",n:"US-Einreise SeaTac",d:"ESTA vorab prüfen! Fingerabdrücke & Foto beim Officer – ca. 30–60 Min. einplanen"}],
+ hl:[{e:"✈️",n:"LH 203 – Berlin → Frankfurt",d:"Abflug 06:45 Uhr · Ankunft Frankfurt ca. 07:55 Uhr · Terminal 1"},{e:"✈️",n:"LH 490 – Frankfurt → Seattle",d:"Abflug Frankfurt ca. 10:25 Uhr · Ankunft Seattle SeaTac 11:55 Uhr (Ortszeit) · ca. 10h Flug"},{e:"🛂",n:"US-Einreise SeaTac",d:"ESTA vorab prüfen! Fingerabdrücke & Foto beim Officer – ca. 30–60 Min. einplanen"}],
  wx:{t:"14–18°C",d:"Meist bewölkt, trocken"}},
 
 {id:20,date:"05.06.26",tag:"Tag 1 · Ankunft",type:"drive",title:"Anreisetag – Seattle",from:"Seattle SeaTac",to:"Seattle",miles:19,
@@ -400,7 +400,19 @@ function scheduleSyncToCloud(){
 
 function showSyncStatus(msg){
   const el=document.getElementById('sync-status');
-  if(el){el.textContent=msg;clearTimeout(el._t);el._t=setTimeout(()=>{if(el)el.textContent='☁️ Sync';},3000);}
+  const ts=document.getElementById('sync-ts');
+  if(el){
+    el.textContent=msg;
+    clearTimeout(el._t);
+    if(msg.includes('🟢')){
+      const now=new Date();
+      localStorage.setItem('rb26_sync_ts',now.toISOString());
+      if(ts)ts.textContent='Zuletzt: '+now.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+      el._t=setTimeout(()=>{if(el)el.textContent='☁️ Sync';},3000);
+    } else if(msg.includes('🔴')||msg.includes('📵')){
+      el._t=setTimeout(()=>{if(el)el.textContent='☁️ Sync';},4000);
+    }
+  }
 }
 // ─────────────────────────────────────────────────────────────
 
@@ -860,7 +872,7 @@ async function fetchWeatherAll(){
     const tripStart=new Date('2026-06-05');
     const daysUntil=Math.round((tripStart-today)/(1000*60*60*24));
     if(daysUntil>16){
-      wxCache._error=`Reise beginnt in ${daysUntil} Tagen – Live-Wetter ab ca. ${daysUntil-16} Tagen vor Abreise`;
+      wxCache._error=`Live-Wetter in ${daysUntil-16} Tagen verfügbar (Reise in ${daysUntil} Tagen)`;
     } else {
       wxCache._error=lastError||'Verbindungsfehler';
     }
@@ -1072,8 +1084,13 @@ function render(){
 function renderHome(){
   const doneDates=new Set(DAYS.filter(d=>(mileage[d.id]&&mileage[d.id].actual)||manualDone[d.id]).map(d=>d.date));
   const completed=doneDates.size;
+  const lastSync=localStorage.getItem('rb26_sync_ts');
+  const lastSyncStr=lastSync?new Date(lastSync).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'–';
   return`<div class="nav"><div class="nav-in"><span class="nav-spc"></span><span class="nav-title">Pacific Northwest 2026</span>
-    <button id="sync-status" onclick="syncFromCloud().then(ok=>{if(ok)render();})" style="background:none;border:none;font-size:12px;color:var(--t2);cursor:pointer;padding:4px 8px;border-radius:var(--r1);min-width:56px;text-align:right">☁️ Sync</button>
+    <div style="text-align:right;min-width:56px">
+      <button id="sync-status" onclick="syncFromCloud().then(ok=>{if(ok)render();})" style="background:none;border:none;font-size:12px;color:var(--t2);cursor:pointer;padding:2px 0;display:block;width:100%">☁️ Sync</button>
+      <span id="sync-ts" style="font-size:9px;color:var(--t3);display:block">Zuletzt: ${lastSyncStr}</span>
+    </div>
   </div></div>
 <div class="home-hdr">
   <div class="hdr-eyebrow">Road Trip 2026</div>
@@ -1231,15 +1248,15 @@ function renderFlug(){
   const divider=`<div style="height:.5px;background:var(--bdr);margin:4px 0"></div>`;
 
   return`
-  <div class="card"><div class="card-hdr"><span class="card-ttl">✈️ LH 205 · Zubringer</span><span style="font-size:11px;color:var(--t3)">Kurzstrecke</span></div><div class="card-body">
+  <div class="card"><div class="card-hdr"><span class="card-ttl">✈️ LH 203 · Zubringer</span><span style="font-size:11px;color:var(--t3)">Kurzstrecke</span></div><div class="card-body">
     ${infoRow('Strecke','Berlin BER → Frankfurt FRA')}
     ${divider}
-    ${infoRow('Abflug','07:15 Uhr (MESZ)','Terminal 1 · BER · Check-in ab 05:00 Uhr')}
-    ${infoRow('Ankunft','08:25 Uhr (MESZ)','Terminal 1 · FRA')}
+    ${infoRow('Abflug','06:45 Uhr (MESZ)','Terminal 1 · BER · Check-in ab 04:30 Uhr')}
+    ${infoRow('Ankunft','07:55 Uhr (MESZ)','Terminal 1 · FRA')}
     ${infoRow('Flugzeit','ca. 1 Std. 10 Min.','')}
     ${infoRow('Flugzeug','Airbus A320','')}
     ${divider}
-    <div class="tip"><div class="tip-lbl">⚠️ Umstieg Frankfurt</div><div class="tip-txt">Umsteigezeit ca. 1:55 Std. · Terminal 1 bleibt gleich · Gate Z-Bereich für LH 490 · Sicherheitskontrolle Schengen → Non-Schengen einplanen!</div></div>
+    <div class="tip"><div class="tip-lbl">⚠️ Umstieg Frankfurt</div><div class="tip-txt">Umsteigezeit ca. 2:25 Std. · Terminal 1 bleibt gleich · Gate Z-Bereich für LH 490 · Sicherheitskontrolle Schengen → Non-Schengen einplanen!</div></div>
   </div></div>
 
   <div class="card"><div class="card-hdr"><span class="card-ttl">✈️ LH 490 · Langstrecke</span><span style="font-size:11px;color:var(--t3)">Transatlantik</span></div><div class="card-body">
@@ -1256,11 +1273,11 @@ function renderFlug(){
 
   <div class="card"><div class="card-hdr"><span class="card-ttl">📋 Zeitplan Reisetag</span></div><div class="card-body" style="gap:0">
     ${[
-      ['04:00','Aufstehen & Abfahrt zum BER'],
-      ['05:00','Check-in öffnet BER Terminal 1'],
-      ['06:15','Sicherheitskontrolle & Gate'],
-      ['07:15','Abflug LH 205 Berlin → Frankfurt'],
-      ['08:25','Ankunft Frankfurt T1 · Umstieg'],
+      ['03:30','Aufstehen & Abfahrt zum BER'],
+      ['04:30','Check-in öffnet BER Terminal 1'],
+      ['05:45','Sicherheitskontrolle & Gate'],
+      ['06:45','Abflug LH 203 Berlin → Frankfurt'],
+      ['07:55','Ankunft Frankfurt T1 · Umstieg'],
       ['10:20','Abflug LH 490 Frankfurt → Seattle'],
       ['11:55','Ankunft Seattle SeaTac (Ortszeit PDT)'],
       ['12:30','US-Einreise & Gepäckausgabe'],
