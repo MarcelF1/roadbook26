@@ -266,7 +266,7 @@ const DAYS=[
 {id:11,date:"16.06.26",tag:"Tag 12",type:"drive",title:"Twin Falls → Yellowstone",from:"Twin Falls",to:"Yellowstone / Grant Village",miles:280,
  stops:[{n:"Twin Falls",f:1},{n:"Craters of the Moon",m:"ca. 95 Meilen"},{n:"Idaho Falls (Mittagsstopp)",m:"ca. 65 Meilen"},{n:"Ashton-Flagg Ranch Road ⚠️",m:"ca. 50 Meilen Schotter"},{n:"Lewis Falls",m:""},{n:"Grant Village",m:"ca. 30 Meilen",l:1}],
  hotel:{nm:"Grant Village – Yellowstone NP",addr:"24 Rainbow Lp, Yellowstone NP, WY 82190",ci:"16:30",co:"11:00",bkf:false,bkf_i:"❌ Nicht inklusive (Nationalpark-Lodge)",bkf_t:"Grant Village Dining Room (6:30–10:00) oder Lake House Restaurant am Yellowstone Lake"},
- hl:[{e:"🌑",n:"Craters of the Moon",d:"NASA-Astronauten trainierten hier! Mondlandschaft, 2.000 Jahre alt. 7-Mile Loop Drive, 1h reicht"},{e:"🌊",n:"Idaho Falls River Walk",d:"8 km Uferweg mitten in der Stadt – perfekte Mittagspause"},{e:"🛤️",n:"Ashton-Flagg Ranch Road",d:"⚠️ 75 km Schotter durch Grizzly-Territorium! 2,5–3h einplanen. Erst ab 1. Juni offen"},{e:"💦",n:"Lewis Falls",d:"Direkt am South Entrance – 15 Min. Stopp, Juni = volle Schneeschmelze"},{e:"🔥",n:"Grillplatz: Mesa Falls Scenic Area",q:"Upper Mesa Falls Scenic Area Ashton Idaho",d:"US-20 bei Ashton, ID · ca. 60 Meilen vor Yellowstone · Upper & Lower Mesa Falls · Picknicktische am Fluss · einer der schönsten unberührten Wasserfälle Idahos · letzter entspannter Stopp vor dem Park"}],
+ hl:[{e:"🌑",n:"Craters of the Moon",d:"NASA-Astronauten trainierten hier! Mondlandschaft, 2.000 Jahre alt. 7-Mile Loop Drive, 1h reicht"},{e:"🌊",n:"Idaho Falls River Walk",d:"8 km Uferweg mitten in der Stadt – perfekte Mittagspause"},{e:"🛤️",n:"Ashton-Flagg Ranch Road",d:"⚠️ 75 km Schotter durch Grizzly-Territorium! 2,5–3h einplanen. Erst ab 1. Juni offen – Status vorab prüfen:",q:"Ashton Flagg Ranch Road Idaho",url:"https://www.nps.gov/grte/planyourvisit/roads.htm"},{e:"💦",n:"Lewis Falls",d:"Direkt am South Entrance – 15 Min. Stopp, Juni = volle Schneeschmelze"},{e:"🔥",n:"Grillplatz: Mesa Falls Scenic Area",q:"Upper Mesa Falls Scenic Area Ashton Idaho",d:"US-20 bei Ashton, ID · ca. 60 Meilen vor Yellowstone · Upper & Lower Mesa Falls · Picknicktische am Fluss · einer der schönsten unberührten Wasserfälle Idahos · letzter entspannter Stopp vor dem Park"}],
  wx:{t:"8–20°C",d:"Im Park deutlich kühler – Lagen-System anziehen, Gewittergefahr nachmittags"}},
 
 {id:12,date:"17.06.26",tag:"Tag 13",type:"rest",title:"Yellowstone – Erkundung",from:"Grant Village",to:"Grant Village",miles:150,
@@ -634,6 +634,8 @@ function renderDocs(d){
 const REMINDERS=[
   {date:'2026-06-06',hour:10,min:30,title:'Space Needle in 30 Min! 🗼',body:'Ticket 11:00 Uhr · 400 Broad St · Jetzt aufbrechen!',dayId:1},
   {date:'2026-06-06',hour:16,min:30,title:'Columbia Center in 30 Min! 🏙️',body:'Ticket 17:00 Uhr · 701 5th Ave · Eingang 5th Ave',dayId:1},
+  {date:'2026-06-13',hour:10,min:0,title:'🛤️ Ashton-Flagg Ranch Road prüfen!',body:'In 3 Tagen fahrt ihr diese Schotterstraße – jetzt auf nps.gov/grte prüfen ob sie offen ist!',dayId:11},
+  {date:'2026-06-14',hour:10,min:0,title:'🛤️ Ashton-Flagg Road – nochmal prüfen!',body:'Übermorgen geht es los! Straßenstatus nps.gov/grte checken bevor ihr losfahrt.',dayId:11},
 ];
 
 // Reisedaten 05.06–24.06 → Zeitzone: PDT (UTC-7) für WA/OR, MDT (UTC-6) für ID/MT/WY
@@ -1431,6 +1433,7 @@ function renderHighlights(d){
       <div style="flex:1;min-width:0">
         <div class="hl-nm">${h.n}</div>
         <div class="hl-ds">${h.d}</div>
+        ${h.url?`<a href="${h.url}" target="_blank" style="display:inline-block;margin-top:6px;background:var(--blu-l);color:var(--blu);border-radius:var(--r1);padding:5px 10px;font-size:11px;font-weight:700;text-decoration:none">🌐 ${h.url.replace('https://','').replace('http://','')}</a>`:''}
         <div style="display:flex;gap:6px;margin-top:7px">
           <a href="${appleNav}" style="background:#e8f0fa;color:var(--blu);border-radius:var(--r1);padding:5px 10px;font-size:11px;font-weight:700;text-decoration:none">🍎 Maps</a>
           <a href="${googleNav}" target="_blank" style="background:var(--grn-l);color:var(--grn);border-radius:var(--r1);padding:5px 10px;font-size:11px;font-weight:700;text-decoration:none">🗺 Google</a>
